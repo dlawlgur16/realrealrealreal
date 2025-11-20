@@ -41,3 +41,10 @@ backend/uploads/
 *.jpg
 *.jpeg
 
+# Large model files (too big for GitHub)
+backend/models/**/*.safetensors
+backend/models/**/*.pth
+backend/models/**/*.pt
+backend/models/**/*.bin
+backend/templates/**/*.safetensors
+
