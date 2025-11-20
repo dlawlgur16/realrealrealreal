@@ -37,14 +37,29 @@ Thumbs.db
 # Project specific
 backend/static/
 backend/uploads/
-*.png
-*.jpg
-*.jpeg
+backend/static/**/*
+backend/processed/
 
-# Large model files (too big for GitHub)
+# Large model files (too big for GitHub - use Git LFS or download separately)
 backend/models/**/*.safetensors
 backend/models/**/*.pth
 backend/models/**/*.pt
 backend/models/**/*.bin
+backend/models/**/*.ckpt
 backend/templates/**/*.safetensors
+backend/templates/**/*.pth
+backend/templates/**/*.pt
+
+# Generated images
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+
+# Cache and temp files
+backend/__pycache__/
+frontend/.next/
+frontend/out/
+frontend/build/
 
