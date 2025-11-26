@@ -28,9 +28,10 @@
 
 ### Backend
 - **FastAPI** - Python 고성능 웹 프레임워크
-- **Gemini API** - Google AI 이미지 생성/편집 모델
-- **httpx** - 비동기 HTTP 클라이언트
-- **Pillow** - 이미지 처리
+- **Gemini 2.5 Flash Image** - Google AI 이미지 생성/편집 모델
+- **google-genai** - Google Gemini API 공식 SDK
+- **Pillow (PIL)** - 이미지 처리 및 최적화
+- **python-dotenv** - 환경변수 관리
 
 ### Frontend
 - **Vanilla HTML/CSS/JS** - 단독 실행 가능
@@ -40,13 +41,20 @@
 ## 📁 프로젝트 구조
 
 ```
-karrot-booster/
-├── backend/
-│   ├── main.py           # FastAPI 서버 & API 엔드포인트
-│   └── requirements.txt  # Python 의존성
-├── frontend/
-│   ├── index.html        # 단독 실행 가능한 웹 앱
-│   └── App.jsx           # React 컴포넌트 버전
+realrealrealreal/
+├── app/                    # 백엔드 코드
+│   ├── __init__.py
+│   ├── main.py            # FastAPI 앱 및 엔드포인트
+│   ├── config.py          # 설정 및 Gemini 클라이언트 초기화
+│   ├── models.py          # Pydantic 데이터 모델
+│   ├── prompts.py         # 프롬프트 템플릿
+│   ├── utils.py           # 유틸리티 함수 (이미지 처리 등)
+│   └── gemini_client.py   # Gemini API 클라이언트
+├── frontend/              # 프론트엔드 파일
+│   ├── index.html         # 단독 실행 가능한 웹 앱
+│   └── App.jsx            # React 컴포넌트 버전
+├── run.py                 # 서버 실행 스크립트
+├── requirements.txt       # Python 의존성
 └── README.md
 ```
 
@@ -55,8 +63,6 @@ karrot-booster/
 ### 1. 백엔드 설정
 
 ```bash
-cd backend
-
 # 가상환경 생성 (선택)
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
@@ -65,12 +71,22 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # 환경변수 설정
-export GEMINI_API_KEY="your-api-key-here"
+# Windows (cmd):
+set GEMINI_API_KEY=your-api-key-here
+
+# Windows (PowerShell):
+$env:GEMINI_API_KEY='your-api-key-here'
+
+# Linux/Mac:
+export GEMINI_API_KEY='your-api-key-here'
+
+# 또는 .env 파일 생성 (python-dotenv 자동 로드)
+# .env 파일에 GEMINI_API_KEY=your-api-key-here 작성
 
 # 서버 실행
-python main.py
+python run.py
 # 또는
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ### 2. 프론트엔드 실행
@@ -83,6 +99,9 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 cd frontend
 python -m http.server 3000
 # http://localhost:3000 접속
+
+# 방법 3: 루트에서 실행
+python -m http.server 3000 --directory frontend
 ```
 
 ### 3. API 키 발급
@@ -102,8 +121,15 @@ POST /api/process
 |---------|------|------|
 | file | File | 이미지 파일 (필수) |
 | process_type | string | "poster" \| "serial" \| "defect" |
+| reference_files | File[] | 레퍼런스 이미지 파일들 (선택, 여러 장 가능) |
+| additional_instructions | string | 추가 지시사항 (선택) |
 | mask_x, mask_y | int | 영역 시작 좌표 (serial, defect용) |
 | mask_width, mask_height | int | 영역 크기 (serial, defect용) |
+
+**레퍼런스 이미지 기능:**
+- 첫 번째 이미지가 메인 제품 이미지
+- 나머지 이미지는 스타일 가이드로 사용
+- 레퍼런스 이미지의 스타일, 조명, 배경을 메인 이미지에 적용
 
 ### 전용 엔드포인트
 ```
@@ -134,12 +160,25 @@ POST /api/defect   # 하자 강조 전용
 
 ## ⚠️ API 사용량 제한
 
-Gemini 3 Pro Image 모델 (무료 티어 기준):
+Gemini 2.5 Flash Image 모델 (무료 티어 기준):
 - **RPM**: 20 (분당 요청 수)
 - **TPM**: 100K (분당 토큰 수)
 - **RPD**: 250 (일일 요청 수)
 
 > 서비스 확장 시 유료 플랜으로 업그레이드 필요
+
+## 🔧 주요 기능
+
+### 레퍼런스 이미지 지원
+- 여러 레퍼런스 이미지를 업로드하여 스타일 일관성 확보
+- 첫 번째 이미지가 메인 제품 이미지
+- 나머지 이미지는 스타일 가이드로 활용
+- 문서 기반 모범 사례 적용
+
+### 이미지 최적화
+- 자동 이미지 리사이즈 (최대 1500px)
+- JPEG/PNG 자동 최적화
+- 처리 속도 향상 및 API 비용 절감
 
 ## 🎯 판매 팁
 
