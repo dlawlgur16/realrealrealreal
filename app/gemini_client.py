@@ -156,33 +156,26 @@ async def call_gemini_api(
             # 이미지 확인 - 모든 가능한 방법 시도
             image_found = False
             
-            # 방법 1: inline_data 확인 후 as_image() 호출 (문서 예제 방식)
+            # 방법 1: inline_data 확인 후 직접 bytes 데이터 사용 (수정된 부분)
             if hasattr(part, 'inline_data'):
                 try:
                     inline_data = part.inline_data
-                    print(f"[DEBUG] Part {part_count}: inline_data 존재, 값={inline_data}")
+                    print(f"[DEBUG] Part {part_count}: inline_data 존재")
                     if inline_data is not None:
                         print(f"[DEBUG] Part {part_count}: inline_data 타입={type(inline_data)}")
                         if hasattr(inline_data, 'mime_type'):
                             print(f"[DEBUG] Part {part_count}: mime_type={inline_data.mime_type}")
                         if hasattr(inline_data, 'data'):
-                            print(f"[DEBUG] Part {part_count}: data 타입={type(inline_data.data)}, 길이={len(inline_data.data) if hasattr(inline_data.data, '__len__') else 'N/A'}")
-                        
-                        # as_image() 호출
-                        if hasattr(part, 'as_image'):
-                            print(f"[DEBUG] Part {part_count}: as_image() 호출 시도...")
-                            image = part.as_image()
-                            if image:
-                                print(f"[DEBUG] Part {part_count}: 이미지 발견! 크기: {image.size}, 모드: {image.mode}")
-                                # PIL Image를 bytes로 변환
-                                img_byte_arr = io.BytesIO()
-                                image.save(img_byte_arr, format='PNG')
-                                img_byte_arr = img_byte_arr.getvalue()
-                                # base64로 인코딩
-                                image_base64_result = base64.b64encode(img_byte_arr).decode('utf-8')
+                            data_bytes = inline_data.data
+                            print(f"[DEBUG] Part {part_count}: data 타입={type(data_bytes)}, 길이={len(data_bytes) if hasattr(data_bytes, '__len__') else 'N/A'}")
+                            
+                            # 직접 bytes 데이터를 base64로 인코딩
+                            if isinstance(data_bytes, bytes) and len(data_bytes) > 0:
+                                image_base64_result = base64.b64encode(data_bytes).decode('utf-8')
+                                mime_type_result = getattr(inline_data, 'mime_type', 'image/png')
                                 result["candidates"][0]["content"]["parts"].append({
                                     "inlineData": {
-                                        "mimeType": "image/png",
+                                        "mimeType": mime_type_result,
                                         "data": image_base64_result
                                     }
                                 })
@@ -215,8 +208,8 @@ async def call_gemini_api(
                     print(f"[DEBUG] Part {part_count}: as_image() 직접 호출 오류: {e}")
                     print(traceback.format_exc())
             
-            if not image_found:
-                print(f"[DEBUG] Part {part_count}: 이미지를 찾지 못함")
+            if not image_found and hasattr(part, 'inline_data') and part.inline_data is not None:
+                print(f"[DEBUG] Part {part_count}: inline_data가 있었지만 이미지 추출 실패")
             
             print(f"[DEBUG] ===== Part {part_count} 분석 완료 =====\n")
         
@@ -232,4 +225,3 @@ async def call_gemini_api(
             status_code=500,
             detail=f"Gemini API 오류: {str(e)}"
         )
-
