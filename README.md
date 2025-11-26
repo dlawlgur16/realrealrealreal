@@ -1,192 +1,157 @@
-# 내 똥템을 애플처럼 – 중고거래 AI 포스터 에디터
+# 🥕 당근 부스터 (Karrot Booster)
 
-사용자가 대충 찍은 중고 물건 사진을 업로드하면, AI가 배경 제거, Stable Diffusion img2img 처리, ControlNet Depth 적용, 그리고 Gemini로 생성한 광고 카피를 자동으로 합성하여 애플 광고 같은 고퀄리티 포스터로 만들어주는 서비스입니다.
+**중고거래 프리미엄 포토 서비스** - AI 기반 이미지 변환으로 중고물품의 가치를 극대화하세요.
 
-## 🎯 주요 기능
+## 📋 개요
 
-- **이미지 업로드**: JPG/PNG 파일 업로드
-- **배경 제거**: rembg를 사용한 자동 배경 제거
-- **Stable Diffusion 처리**: SD 1.5 + ControlNet(Depth) + LoRA로 광고풍 이미지 보정
-- **AI 카피 생성**: Gemini API를 사용한 광고 카피 자동 생성
-- **템플릿 합성**: 애플 스타일 그라데이션 배경 + 레이아웃
-- **최종 포스터**: 768×1024 해상도의 인스타 카드형 포스터 생성
+당근 부스터는 당근마켓, 중고나라 등 C2C 플랫폼 판매자를 위한 AI 이미지 처리 서비스입니다.
+**Gemini 3 Pro Image** 모델을 활용하여 세 가지 핵심 기능을 제공합니다.
 
-## 🏗️ 아키텍처
+## ✨ 핵심 기능
 
-- **프론트엔드**: Next.js 14 (React + TypeScript)
-- **백엔드**: FastAPI (Python)
-- **이미지 처리**: 
-  - rembg (배경 제거)
-  - Stable Diffusion 1.5 (img2img)
-  - ControlNet Depth
-  - LoRA 지원
-  - Pillow (이미지 합성)
-- **AI 카피**: Google Gemini API
+### 1. 🌟 포스터형 썸네일 (Aesthetic Hook)
+- 평범한 중고물품 사진을 스튜디오급 썸네일로 변환
+- 깨끗한 배경 + 전문적인 조명
+- 제품의 원래 질감/상태는 유지 (빈티지 가치 보존)
 
-## 📦 설치 및 실행
+### 2. 🛡️ 인증 영역 선명화 (Trust Proof)
+- 시리얼 넘버, 모델명 등 인증 정보 강조
+- 특정 영역만 선택하여 가독성 향상
+- 나머지 이미지는 원본 그대로 유지
 
-### 사전 요구사항
+### 3. ⚠️ 하자 부분 강조 (The Honesty)
+- 정직한 상태 표시로 구매자 신뢰 확보
+- 하자 부분을 미적으로 강조
+- "정직한 판매자" 이미지 구축
 
-- Python 3.11 이상
-- Node.js 18 이상
-- NVIDIA GPU (GTX 1080 Ti 이상, 11GB VRAM 권장)
-- CUDA 11.8 이상
-- Gemini API 키
+## 🛠️ 기술 스택
 
-### 백엔드 설정
+### Backend
+- **FastAPI** - Python 고성능 웹 프레임워크
+- **Gemini API** - Google AI 이미지 생성/편집 모델
+- **httpx** - 비동기 HTTP 클라이언트
+- **Pillow** - 이미지 처리
 
-1. 백엔드 디렉토리로 이동:
-```bash
-cd backend
-```
-
-2. 가상환경 생성 및 활성화:
-```bash
-python -m venv venv
-# Windows
-venv\Scripts\activate
-# Mac/Linux
-source venv/bin/activate
-```
-
-3. 의존성 설치:
-```bash
-pip install -r requirements.txt
-```
-
-**주의**: PyTorch와 CUDA 버전은 시스템에 맞게 설치해야 합니다.
-```bash
-# CUDA 11.8 예시
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
-```
-
-4. 환경변수 설정:
-```bash
-# .env 파일 생성
-cp .env.example .env
-# .env 파일에 다음 내용 추가:
-# GEMINI_API_KEY=your_gemini_api_key_here
-# LORA_PATH=path/to/lora/model.safetensors (선택사항)
-```
-
-5. 서버 실행:
-```bash
-uvicorn app.main:app --reload --port 8000
-```
-
-### 프론트엔드 설정
-
-1. 프론트엔드 디렉토리로 이동:
-```bash
-cd frontend
-```
-
-2. 의존성 설치:
-```bash
-npm install
-```
-
-3. 개발 서버 실행:
-```bash
-npm run dev
-```
-
-4. 브라우저에서 `http://localhost:3000` 접속
-
-## 🚀 사용 방법
-
-1. 이미지 업로드: 판매할 중고 제품 사진을 업로드합니다.
-2. 정보 입력: 제품명, 설명, 가격을 입력합니다 (선택사항).
-3. 스타일 선택: 애플/병맛/드라마틱 스타일 중 하나를 선택합니다.
-4. 포스터 생성: "포스터 생성하기" 버튼을 클릭합니다.
-5. 다운로드: 생성된 포스터를 다운로드합니다.
+### Frontend
+- **Vanilla HTML/CSS/JS** - 단독 실행 가능
+- **React (선택)** - 컴포넌트 기반 버전
+- **Pretendard** - 한글 최적화 폰트
 
 ## 📁 프로젝트 구조
 
 ```
-project/
-  frontend/
-    pages/          # Next.js 페이지
-    components/     # React 컴포넌트
-    styles/         # CSS 스타일
-  backend/
-    app/
-      main.py       # FastAPI 메인 앱
-      api/          # API 엔드포인트
-      services/     # 비즈니스 로직
-        rembg_engine.py      # 배경 제거 엔진
-        sd_pipeline.py       # Stable Diffusion 파이프라인
-        copywriter.py        # Gemini 카피 생성
-        template_engine.py   # 템플릿 합성
-        pipeline.py          # 전체 파이프라인
-    static/         # 정적 파일 (생성된 포스터)
-    models/         # 모델 저장 (선택사항)
+karrot-booster/
+├── backend/
+│   ├── main.py           # FastAPI 서버 & API 엔드포인트
+│   └── requirements.txt  # Python 의존성
+├── frontend/
+│   ├── index.html        # 단독 실행 가능한 웹 앱
+│   └── App.jsx           # React 컴포넌트 버전
+└── README.md
 ```
 
-## 🔧 API 엔드포인트
+## 🚀 시작하기
 
-### POST /api/generate-poster
+### 1. 백엔드 설정
 
-포스터를 생성합니다.
+```bash
+cd backend
 
-**Request (multipart/form-data):**
-- `file`: 이미지 파일
-- `tone`: 스타일 톤 ("apple", "funny", "dramatic")
-- `product_name`: 제품명 (선택)
-- `description`: 제품 설명 (선택)
-- `price`: 가격 (선택)
+# 가상환경 생성 (선택)
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-**Response:**
+# 의존성 설치
+pip install -r requirements.txt
+
+# 환경변수 설정
+export GEMINI_API_KEY="your-api-key-here"
+
+# 서버 실행
+python main.py
+# 또는
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### 2. 프론트엔드 실행
+
+```bash
+# 방법 1: 단순 파일 열기
+# frontend/index.html을 브라우저에서 직접 열기
+
+# 방법 2: 로컬 서버로 실행
+cd frontend
+python -m http.server 3000
+# http://localhost:3000 접속
+```
+
+### 3. API 키 발급
+
+1. [Google AI Studio](https://aistudio.google.com/) 접속
+2. API Key 생성
+3. `GEMINI_API_KEY` 환경변수로 설정
+
+## 📡 API 엔드포인트
+
+### 기본 처리 API
+```
+POST /api/process
+```
+
+| 파라미터 | 타입 | 설명 |
+|---------|------|------|
+| file | File | 이미지 파일 (필수) |
+| process_type | string | "poster" \| "serial" \| "defect" |
+| mask_x, mask_y | int | 영역 시작 좌표 (serial, defect용) |
+| mask_width, mask_height | int | 영역 크기 (serial, defect용) |
+
+### 전용 엔드포인트
+```
+POST /api/poster   # 포스터 썸네일 전용
+POST /api/serial   # 시리얼 선명화 전용
+POST /api/defect   # 하자 강조 전용
+```
+
+### 응답 형식
 ```json
 {
-  "result_url": "/static/poster_xxxxx.png",
-  "headline": "생성된 헤드라인",
-  "subcopy": "생성된 서브카피",
-  "cta": "생성된 CTA"
+  "success": true,
+  "image_base64": "...",
+  "message": "이미지 처리가 완료되었습니다.",
+  "process_type": "poster",
+  "processing_time_ms": 12500
 }
 ```
 
-## ⚙️ Stable Diffusion 설정
+## 💰 비즈니스 모델 (제안)
 
-### 기본 설정 (GTX 1080 Ti 최적화)
+| 상품 | 내용 | 가격 |
+|------|------|------|
+| Trial | 썸네일 1장 | 990원 |
+| Standard | 썸네일 + 인증샷 3장 세트 | 2,900원 |
+| Premium | Standard + 판매 컨설팅 | 4,900원 |
+| 월 구독 | 월 10건 처리권 | 19,900원 |
 
-- **Base Model**: Stable Diffusion 1.5
-- **ControlNet**: Depth (control_v11f1p_sd15_depth)
-- **ControlNet Strength**: 0.75
-- **Denoise Strength**: 0.30
-- **CFG Scale**: 5.0
-- **Steps**: 24
-- **Sampler**: DPM++ SDE Karras
-- **Resolution**: 768×1024
+## ⚠️ API 사용량 제한
 
-### LoRA 지원
+Gemini 3 Pro Image 모델 (무료 티어 기준):
+- **RPM**: 20 (분당 요청 수)
+- **TPM**: 100K (분당 토큰 수)
+- **RPD**: 250 (일일 요청 수)
 
-LoRA 모델을 사용하려면 `.env` 파일에 경로를 설정하세요:
-```
-LORA_PATH=path/to/your/lora/model.safetensors
-```
+> 서비스 확장 시 유료 플랜으로 업그레이드 필요
 
-## 🛠️ 기술 스택
+## 🎯 판매 팁
 
-- **Frontend**: Next.js 14, React, TypeScript, Axios
-- **Backend**: FastAPI, Python
-- **Image Processing**: 
-  - rembg
-  - Stable Diffusion 1.5 (diffusers)
-  - ControlNet
-  - Pillow
-- **AI**: Google Gemini API
+1. **포스터 썸네일**을 첫 번째 사진으로 사용
+2. 나머지 사진은 **실제 제품 사진**으로 신뢰도 확보
+3. 하자가 있다면 **정직하게 표시**하여 분쟁 방지
 
-## 📝 라이센스
+## 📝 라이선스
 
-이 프로젝트는 오픈소스입니다.
+MIT License
 
-## 🤝 기여
+## 🙏 크레딧
 
-이슈와 풀 리퀘스트를 환영합니다!
-
-## ⚠️ 주의사항
-
-- GPU 메모리 부족 시 `enable_model_cpu_offload()` 사용
-- 첫 실행 시 모델 다운로드로 인해 시간이 걸릴 수 있습니다
-- CUDA 버전은 시스템에 맞게 설치해야 합니다
+- Gemini API by Google
+- Pretendard Font by Kil Hyung-jin
