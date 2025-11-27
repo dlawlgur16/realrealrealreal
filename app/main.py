@@ -15,6 +15,7 @@ from typing import Optional
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from app.config import client
 from app.models import ProcessResult
@@ -39,13 +40,13 @@ async def global_exception_handler(request: Request, exc: Exception):
     error_msg = f"예외 발생: {type(exc).__name__}: {str(exc)}"
     error_trace = traceback.format_exc()
     logger.error(f"{error_msg}\n{error_trace}")
-    print(f"\n{'='*50}")
-    print(f"에러 발생!")
-    print(f"타입: {type(exc).__name__}")
-    print(f"메시지: {str(exc)}")
-    print(f"트레이스백:\n{error_trace}")
-    print(f"{'='*50}\n")
-    return JSONResponse(
+    print(f"\n{'='*50}", flush=True)
+    print(f"에러 발생!", flush=True)
+    print(f"타입: {type(exc).__name__}", flush=True)
+    print(f"메시지: {str(exc)}", flush=True)
+    print(f"트레이스백:\n{error_trace}", flush=True)
+    print(f"{'='*50}\n", flush=True)
+    response = JSONResponse(
         status_code=500,
         content={
             "success": False,
@@ -53,14 +54,20 @@ async def global_exception_handler(request: Request, exc: Exception):
             "error_type": type(exc).__name__
         }
     )
+    # CORS 헤더 추가
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
 
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["*"],  # 모든 origin 허용
+    allow_credentials=False,  # credentials와 wildcard origin은 함께 사용 불가
+    allow_methods=["*"],  # 모든 HTTP 메서드 허용
+    allow_headers=["*"],  # 모든 헤더 허용
+    expose_headers=["*"],  # 모든 헤더 노출
 )
 
 
@@ -128,21 +135,21 @@ async def process_image(
         except:
             mask_height = None
     
-    print(f"\n[API] /api/process 요청 받음")
-    print(f"[API] process_type: {process_type}")
-    print(f"[API] file.content_type: {file.content_type}")
-    print(f"[API] file.filename: {file.filename}")
+    print(f"\n[API] /api/process 요청 받음", flush=True)
+    print(f"[API] process_type: {process_type}", flush=True)
+    print(f"[API] file.content_type: {file.content_type}", flush=True)
+    print(f"[API] file.filename: {file.filename}", flush=True)
     
     # 파일 유효성 검사
     if not hasattr(file, 'content_type') or not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="이미지 파일만 업로드 가능합니다.")
     
     # 메인 이미지 읽기 및 최적화
-    print("[API] 메인 이미지 파일 읽는 중...")
+    print("[API] 메인 이미지 파일 읽는 중...", flush=True)
     image_bytes = await file.read()
-    print(f"[API] 원본 이미지 크기: {len(image_bytes)} bytes")
+    print(f"[API] 원본 이미지 크기: {len(image_bytes)} bytes", flush=True)
     image_base64 = encode_image_to_base64(image_bytes, optimize=True, max_size=1500)
-    print(f"[API] base64 인코딩 완료: {len(image_base64)} chars")
+    print(f"[API] base64 인코딩 완료: {len(image_base64)} chars", flush=True)
     
     # 레퍼런스 이미지 읽기 및 최적화 (Request에서 직접 파싱)
     reference_images_base64 = []
@@ -151,26 +158,38 @@ async def process_image(
             reference_files_list = form.getlist("reference_files")
         else:
             reference_files_list = []
-        print(f"[DEBUG] form.getlist('reference_files') 결과: {len(reference_files_list) if reference_files_list else 0}개")
+        print(f"[DEBUG] form.getlist('reference_files') 결과: {len(reference_files_list) if reference_files_list else 0}개", flush=True)
         if reference_files_list:
-            print(f"[API] 레퍼런스 이미지 {len(reference_files_list)}개 처리 중...")
+            print(f"[API] 레퍼런스 이미지 {len(reference_files_list)}개 처리 중...", flush=True)
             for i, ref_file in enumerate(reference_files_list):
-                print(f"[DEBUG] 레퍼런스 파일 {i+1}: 타입={type(ref_file)}, 값={ref_file}")
-                if isinstance(ref_file, UploadFile):
-                    if ref_file.content_type and ref_file.content_type.startswith("image/"):
+                print(f"[DEBUG] 레퍼런스 파일 {i+1}: 타입={type(ref_file)}, 값={ref_file}", flush=True)
+                
+                # UploadFile 또는 StarletteUploadFile 모두 처리
+                is_upload_file = isinstance(ref_file, (UploadFile, StarletteUploadFile))
+                has_read = hasattr(ref_file, 'read')
+                has_content_type = hasattr(ref_file, 'content_type')
+                
+                print(f"[DEBUG] 레퍼런스 파일 {i+1}: is_upload_file={is_upload_file}, has_read={has_read}, has_content_type={has_content_type}", flush=True)
+                
+                if has_read and has_content_type:
+                    content_type = ref_file.content_type
+                    print(f"[DEBUG] 레퍼런스 파일 {i+1}: content_type={content_type}", flush=True)
+                    
+                    if content_type and content_type.startswith("image/"):
                         ref_bytes = await ref_file.read()
+                        print(f"[DEBUG] 레퍼런스 파일 {i+1}: 읽기 완료, {len(ref_bytes)} bytes", flush=True)
                         ref_base64 = encode_image_to_base64(ref_bytes, optimize=True, max_size=1500)
                         reference_images_base64.append(ref_base64)
-                        print(f"[API] 레퍼런스 이미지 {i+1} 처리 완료: {len(ref_bytes)} bytes -> 최적화됨, base64 길이: {len(ref_base64)}")
+                        print(f"[API] ✅ 레퍼런스 이미지 {i+1} 처리 완료: {len(ref_bytes)} bytes -> base64 길이: {len(ref_base64)}", flush=True)
                     else:
-                        print(f"[DEBUG] 레퍼런스 파일 {i+1}: content_type이 이미지가 아님: {ref_file.content_type}")
+                        print(f"[DEBUG] 레퍼런스 파일 {i+1}: content_type이 이미지가 아님: {content_type}", flush=True)
                 else:
-                    print(f"[DEBUG] 레퍼런스 파일 {i+1}: UploadFile이 아님")
+                    print(f"[DEBUG] 레퍼런스 파일 {i+1}: read 또는 content_type 속성 없음", flush=True)
     except Exception as e:
-        print(f"[API] 레퍼런스 이미지 파싱 중 오류 (무시하고 계속): {e}")
-        print(traceback.format_exc())
+        print(f"[API] 레퍼런스 이미지 파싱 중 오류 (무시하고 계속): {e}", flush=True)
+        print(traceback.format_exc(), flush=True)
     
-    print(f"[DEBUG] 최종 reference_images_base64 개수: {len(reference_images_base64)}")
+    print(f"[DEBUG] 최종 reference_images_base64 개수: {len(reference_images_base64)}", flush=True)
     
     # 프롬프트 구성
     prompt = get_prompt_by_type(process_type, additional_instructions)
@@ -195,9 +214,9 @@ async def process_image(
         )
         
         # 결과 이미지 추출
-        print(f"[DEBUG] 응답 구조 확인: {list(response.keys()) if isinstance(response, dict) else 'dict 아님'}")
+        print(f"[DEBUG] 응답 구조 확인: {list(response.keys()) if isinstance(response, dict) else 'dict 아님'}", flush=True)
         result_image = extract_image_from_response(response)
-        print(f"[DEBUG] 추출된 이미지: {'있음' if result_image else '없음'}")
+        print(f"[DEBUG] 추출된 이미지: {'있음' if result_image else '없음'}", flush=True)
         
         processing_time = int((time.time() - start_time) * 1000)
         
@@ -234,7 +253,7 @@ async def process_image(
         raise
     except Exception as e:
         error_trace = traceback.format_exc()
-        print(f"처리 중 오류 발생:\n{error_trace}")
+        print(f"처리 중 오류 발생:\n{error_trace}", flush=True)
         processing_time = int((time.time() - start_time) * 1000)
         return ProcessResult(
             success=False,
@@ -254,10 +273,16 @@ async def create_poster_thumbnail(
 ):
     """
     포스터형 썸네일 생성 (전용 엔드포인트)
-    
+
     - style: "minimal" | "vintage" | "modern" | "warm"
     - background_color: 배경 색상 (hex)
     """
+    print("\n" + "="*60, flush=True)
+    print("[POSTER API] 요청 받음!", flush=True)
+    print(f"[POSTER API] style: {style}", flush=True)
+    print(f"[POSTER API] background_color: {background_color}", flush=True)
+    print(f"[POSTER API] file: {file.filename if file else 'None'}", flush=True)
+    print("="*60 + "\n", flush=True)
     style_prompts = {
         "minimal": "Minimalist, clean, museum-display quality",
         "vintage": "Warm vintage aesthetic with nostalgic lighting",
@@ -342,9 +367,3 @@ async def get_prompts():
         "serial": SERIAL_ENHANCEMENT_PROMPT,
         "defect": DEFECT_HIGHLIGHT_PROMPT
     }
-
-
-# 서버 실행은 루트의 run.py를 사용하세요
-# if __name__ == "__main__":
-#     import uvicorn
-#     uvicorn.run(app, host="0.0.0.0", port=8000)

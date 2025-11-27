@@ -9,23 +9,22 @@ import {
   ActivityIndicator,
   Alert,
   SafeAreaView,
+  TextInput,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { createPoster } from '../services/api';
+import { enhanceSerial } from '../services/api';
 import { saveBase64Image } from '../utils/storage';
 
-export default function PosterScreen({ navigation }) {
+export default function SerialScreen({ navigation }) {
   const [selectedImage, setSelectedImage] = useState(null);
   const [processedImage, setProcessedImage] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [selectedStyle, setSelectedStyle] = useState('minimal');
-
-  const styles_options = [
-    { id: 'minimal', label: '미니멀', emoji: '⚪' },
-    { id: 'vintage', label: '빈티지', emoji: '🟤' },
-    { id: 'modern', label: '모던', emoji: '⚫' },
-    { id: 'warm', label: '따뜻한', emoji: '🟠' },
-  ];
+  const [area, setArea] = useState({
+    x: 100,
+    y: 100,
+    width: 200,
+    height: 100,
+  });
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -74,7 +73,13 @@ export default function PosterScreen({ navigation }) {
 
     setLoading(true);
     try {
-      const result = await createPoster(selectedImage, selectedStyle);
+      const result = await enhanceSerial(
+        selectedImage,
+        area.x,
+        area.y,
+        area.width,
+        area.height
+      );
 
       if (result.success && result.image_base64) {
         setProcessedImage(`data:image/jpeg;base64,${result.image_base64}`);
@@ -84,17 +89,7 @@ export default function PosterScreen({ navigation }) {
       }
     } catch (error) {
       console.error('처리 에러:', error);
-      
-      // 네트워크 에러에 대한 더 자세한 메시지 표시
-      if (error.name === 'NetworkError' || error.message?.includes('Network Error')) {
-        Alert.alert(
-          '네트워크 연결 오류',
-          error.message || '백엔드 서버에 연결할 수 없습니다.\n\n서버가 실행 중인지 확인해주세요.',
-          [{ text: '확인' }]
-        );
-      } else {
-        Alert.alert('오류', error.message || '이미지 처리 중 오류가 발생했습니다.');
-      }
+      Alert.alert('오류', '이미지 처리 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -107,17 +102,11 @@ export default function PosterScreen({ navigation }) {
     }
 
     try {
-      console.log('이미지 저장 시작...');
-      const savedUri = await saveBase64Image(processedImage, `poster_${Date.now()}.jpg`);
-      console.log('저장된 URI:', savedUri);
+      await saveBase64Image(processedImage, `serial_${Date.now()}.jpg`);
       Alert.alert('저장 완료', '이미지가 갤러리에 저장되었습니다.');
     } catch (error) {
       console.error('저장 에러:', error);
-      console.error('에러 메시지:', error.message);
-      Alert.alert(
-        '저장 실패', 
-        error.message || '이미지 저장 중 오류가 발생했습니다.\n\n설정에서 저장 권한을 확인해주세요.'
-      );
+      Alert.alert('오류', '이미지 저장 중 오류가 발생했습니다.');
     }
   };
 
@@ -128,17 +117,18 @@ export default function PosterScreen({ navigation }) {
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Text style={styles.backButton}>‹ 뒤로</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>포스터형 썸네일 생성</Text>
-          <Text style={styles.subtitle}>상품을 더 매력적으로 보여주세요</Text>
+          <Text style={styles.title}>인증 정보 선명화</Text>
+          <Text style={styles.subtitle}>
+            시리얼 넘버나 인증서를 깔끔하게 보정하세요
+          </Text>
         </View>
 
         <View style={styles.content}>
-          {/* 이미지 선택 */}
           {!selectedImage && (
             <View style={styles.imagePlaceholder}>
-              <Text style={styles.placeholderIcon}>🎨</Text>
+              <Text style={styles.placeholderIcon}>✨</Text>
               <Text style={styles.placeholderText}>
-                상품 이미지를 선택하세요
+                인증 정보가 포함된 이미지를 선택하세요
               </Text>
               <View style={styles.buttonRow}>
                 <TouchableOpacity
@@ -157,7 +147,6 @@ export default function PosterScreen({ navigation }) {
             </View>
           )}
 
-          {/* 선택된 이미지 */}
           {selectedImage && (
             <View style={styles.imageContainer}>
               <Text style={styles.sectionTitle}>원본 이미지</Text>
@@ -171,36 +160,69 @@ export default function PosterScreen({ navigation }) {
             </View>
           )}
 
-          {/* 스타일 선택 */}
           {selectedImage && (
-            <View style={styles.styleContainer}>
-              <Text style={styles.sectionTitle}>스타일 선택</Text>
-              <View style={styles.styleButtons}>
-                {styles_options.map((style) => (
-                  <TouchableOpacity
-                    key={style.id}
-                    style={[
-                      styles.styleButton,
-                      selectedStyle === style.id && styles.styleButtonActive,
-                    ]}
-                    onPress={() => setSelectedStyle(style.id)}
-                  >
-                    <Text style={styles.styleEmoji}>{style.emoji}</Text>
-                    <Text
-                      style={[
-                        styles.styleLabel,
-                        selectedStyle === style.id && styles.styleLabelActive,
-                      ]}
-                    >
-                      {style.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+            <View style={styles.areaContainer}>
+              <Text style={styles.sectionTitle}>인증 영역 좌표</Text>
+              <Text style={styles.helpText}>
+                선명화할 영역의 위치와 크기를 입력하세요
+              </Text>
+
+              <View style={styles.inputRow}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>X 좌표</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={String(area.x)}
+                    onChangeText={(text) =>
+                      setArea({ ...area, x: parseInt(text) || 0 })
+                    }
+                    keyboardType="numeric"
+                    placeholder="100"
+                  />
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Y 좌표</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={String(area.y)}
+                    onChangeText={(text) =>
+                      setArea({ ...area, y: parseInt(text) || 0 })
+                    }
+                    keyboardType="numeric"
+                    placeholder="100"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.inputRow}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>너비</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={String(area.width)}
+                    onChangeText={(text) =>
+                      setArea({ ...area, width: parseInt(text) || 0 })
+                    }
+                    keyboardType="numeric"
+                    placeholder="200"
+                  />
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>높이</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={String(area.height)}
+                    onChangeText={(text) =>
+                      setArea({ ...area, height: parseInt(text) || 0 })
+                    }
+                    keyboardType="numeric"
+                    placeholder="100"
+                  />
+                </View>
               </View>
             </View>
           )}
 
-          {/* 처리 버튼 */}
           {selectedImage && (
             <TouchableOpacity
               style={[styles.processButton, loading && styles.buttonDisabled]}
@@ -210,15 +232,14 @@ export default function PosterScreen({ navigation }) {
               {loading ? (
                 <ActivityIndicator color="white" />
               ) : (
-                <Text style={styles.processButtonText}>포스터 생성하기</Text>
+                <Text style={styles.processButtonText}>선명화 처리하기</Text>
               )}
             </TouchableOpacity>
           )}
 
-          {/* 처리된 이미지 */}
           {processedImage && (
             <View style={styles.resultContainer}>
-              <Text style={styles.sectionTitle}>생성된 포스터</Text>
+              <Text style={styles.sectionTitle}>처리된 이미지</Text>
               <Image source={{ uri: processedImage }} style={styles.image} />
               <TouchableOpacity
                 style={styles.saveButton}
@@ -247,7 +268,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     fontSize: 24,
-    color: '#FF6B6B',
+    color: '#4ECDC4',
     marginBottom: 8,
   },
   title: {
@@ -278,13 +299,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6C757D',
     marginBottom: 24,
+    textAlign: 'center',
   },
   buttonRow: {
     flexDirection: 'row',
     gap: 12,
   },
   pickButton: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#4ECDC4',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
@@ -321,41 +343,40 @@ const styles = StyleSheet.create({
     color: '#6C757D',
     fontSize: 14,
   },
-  styleContainer: {
+  areaContainer: {
     marginBottom: 20,
-  },
-  styleButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  styleButton: {
-    flex: 1,
-    margin: 4,
+    backgroundColor: 'white',
     padding: 16,
     borderRadius: 12,
-    backgroundColor: 'white',
-    borderWidth: 2,
-    borderColor: '#E9ECEF',
-    alignItems: 'center',
   },
-  styleButtonActive: {
-    borderColor: '#FF6B6B',
-    backgroundColor: '#FFF5F5',
-  },
-  styleEmoji: {
-    fontSize: 24,
-    marginBottom: 8,
-  },
-  styleLabel: {
+  helpText: {
     fontSize: 12,
     color: '#6C757D',
+    marginBottom: 16,
   },
-  styleLabelActive: {
-    color: '#FF6B6B',
-    fontWeight: '600',
+  inputRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  inputGroup: {
+    flex: 1,
+  },
+  inputLabel: {
+    fontSize: 12,
+    color: '#6C757D',
+    marginBottom: 6,
+  },
+  input: {
+    backgroundColor: '#F8F9FA',
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
   },
   processButton: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#4ECDC4',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',

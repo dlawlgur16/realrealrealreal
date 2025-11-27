@@ -794,7 +794,7 @@
 
   <!-- 푸터 -->
   <footer class="footer">
-    <p>Powered by Gemini 3 Pro Image • Made for 당근마켓 판매자</p>
+    <p>Powered by Gemini 3 Pro Image • Made for Karrot Seller</p>
   </footer>
 
   <script>
@@ -1044,6 +1044,11 @@
           body: formData
         });
         
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`서버 오류 (${response.status}): ${errorText}`);
+        }
+        
         const result = await response.json();
         
         if (result.success && result.image_base64) {
@@ -1052,7 +1057,9 @@
           showError(result.message || '이미지 처리에 실패했습니다.');
         }
       } catch (err) {
-        showError('서버 연결에 실패했습니다. 백엔드 서버가 실행 중인지 확인해주세요.');
+        console.error('API 에러:', err);
+        const errorMsg = err.message || '서버 연결에 실패했습니다.';
+        showError(`${errorMsg}\n\n백엔드 서버(${API_BASE_URL})가 실행 중인지 확인해주세요.`);
       } finally {
         showLoading(false);
       }
