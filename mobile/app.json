@@ -1,0 +1,74 @@
+{
+  "expo": {
+    "name": "Karrot Booster",
+    "slug": "karrot-booster",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "이 앱은 처리된 이미지를 갤러리에 저장하기 위해 사진 라이브러리 접근 권한이 필요합니다.",
+        "NSCameraUsageDescription": "이 앱은 상품 사진을 촬영하기 위해 카메라 접근 권한이 필요합니다.",
+        "NSPhotoLibraryAddUsageDescription": "이 앱은 처리된 이미지를 갤러리에 저장하기 위해 사진 저장 권한이 필요합니다.",
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true,
+          "NSExceptionDomains": {
+            "192.168.0.245": {
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSIncludesSubdomains": true
+            },
+            "localhost": {
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSIncludesSubdomains": true
+            }
+          }
+        }
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "usesCleartextTraffic": true,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "이 앱은 처리된 이미지를 갤러리에 저장하기 위해 사진 라이브러리 접근 권한이 필요합니다.",
+          "cameraPermission": "이 앱은 상품 사진을 촬영하기 위해 카메라 접근 권한이 필요합니다."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "이 앱은 처리된 이미지를 저장하기 위해 미디어 라이브러리 접근 권한이 필요합니다.",
+          "savePhotosPermission": "이 앱은 처리된 이미지를 갤러리에 저장하기 위해 사진 저장 권한이 필요합니다.",
+          "isAccessMediaLocationEnabled": true
+        }
+      ]
+    ]
+  }
+}
