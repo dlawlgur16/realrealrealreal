@@ -21,6 +21,7 @@ from app.config import client
 from app.models import ProcessResult
 from app.prompts import get_prompt_by_type, add_reference_image_instructions, POSTER_THUMBNAIL_PROMPT, SERIAL_ENHANCEMENT_PROMPT, DEFECT_HIGHLIGHT_PROMPT
 from app.utils import encode_image_to_base64, extract_image_from_response
+import base64
 from app.gemini_client import call_gemini_api
 
 # 로깅 설정
@@ -144,12 +145,13 @@ async def process_image(
     if not hasattr(file, 'content_type') or not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="이미지 파일만 업로드 가능합니다.")
     
-    # 메인 이미지 읽기 및 최적화
+    # 메인 이미지 읽기 (리사이즈/압축 없이 원본 그대로)
     print("[API] 메인 이미지 파일 읽는 중...", flush=True)
     image_bytes = await file.read()
     print(f"[API] 원본 이미지 크기: {len(image_bytes)} bytes", flush=True)
-    image_base64 = encode_image_to_base64(image_bytes, optimize=True, max_size=1500)
-    print(f"[API] base64 인코딩 완료: {len(image_base64)} chars", flush=True)
+    # 원본 이미지를 그대로 base64로 인코딩 (리사이즈/압축 없음)
+    image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+    print(f"[API] base64 인코딩 완료: {len(image_base64)} chars (원본 그대로)", flush=True)
     
     # 레퍼런스 이미지 읽기 및 최적화 (Request에서 직접 파싱)
     reference_images_base64 = []
@@ -220,31 +222,53 @@ async def process_image(
         
         processing_time = int((time.time() - start_time) * 1000)
         
+        # 텍스트 응답 확인 (하자 감지의 경우)
+        text_response = ""
+        try:
+            candidates = response.get("candidates", [])
+            if candidates:
+                parts = candidates[0].get("content", {}).get("parts", [])
+                for part in parts:
+                    if "text" in part:
+                        text_response = part["text"].lower()
+        except:
+            pass
+        
+        # 하자 감지의 경우: 하자가 없으면 원본 이미지 반환
+        if process_type == "defect" and not result_image:
+            # "no defect", "no damage", "없음" 등의 키워드 확인
+            no_defect_keywords = ["no defect", "no damage", "no defects", "no damages", 
+                                 "defect not found", "no issues", "없음", "하자 없"]
+            if any(keyword in text_response for keyword in no_defect_keywords):
+                print("[API] 하자가 감지되지 않음 - 원본 이미지 반환", flush=True)
+                return ProcessResult(
+                    success=True,
+                    image_base64=image_base64,  # 원본 이미지 반환
+                    message="하자가 감지되지 않았습니다. 원본 이미지를 반환합니다.",
+                    process_type=process_type,
+                    processing_time_ms=processing_time
+                )
+        
         if result_image:
+            # 하자가 있는 경우 메시지 설정
+            if process_type == "defect":
+                message = "하자가 감지되어 빨간색 원으로 표시되었습니다."
+            else:
+                message = "이미지 처리가 완료되었습니다."
+            
             return ProcessResult(
                 success=True,
                 image_base64=result_image,
-                message="이미지 처리가 완료되었습니다.",
+                message=message,
                 process_type=process_type,
                 processing_time_ms=processing_time
             )
         else:
-            # 이미지 생성 실패시 텍스트 응답 확인
-            text_response = ""
-            try:
-                candidates = response.get("candidates", [])
-                if candidates:
-                    parts = candidates[0].get("content", {}).get("parts", [])
-                    for part in parts:
-                        if "text" in part:
-                            text_response = part["text"]
-            except:
-                pass
-            
+            # 이미지 생성 실패시
             return ProcessResult(
                 success=False,
                 image_base64=None,
-                message=f"이미지 생성에 실패했습니다. {text_response}",
+                message=f"이미지 생성에 실패했습니다. {text_response if text_response else '알 수 없는 오류'}",
                 process_type=process_type,
                 processing_time_ms=processing_time
             )
@@ -304,16 +328,17 @@ async def create_poster_thumbnail(
 async def enhance_serial_area(
     request: Request,
     file: UploadFile = File(...),
-    x: int = Form(...),
-    y: int = Form(...),
-    width: int = Form(...),
-    height: int = Form(...)
+    x: Optional[int] = Form(None),
+    y: Optional[int] = Form(None),
+    width: Optional[int] = Form(None),
+    height: Optional[int] = Form(None)
 ):
     """
-    시리얼 넘버/인증 영역 선명화 (전용 엔드포인트)
+    민감 정보 자동 감지 및 제거 (전용 엔드포인트)
     
-    - x, y: 영역 시작 좌표
-    - width, height: 영역 크기
+    시리얼 번호, 모델명, 인증 마크 등 민감 정보를 자동으로 감지하여 제거합니다.
+    
+    - x, y, width, height: 선택적 영역 지정 (지정하지 않으면 전체 이미지에서 자동 감지)
     """
     return await process_image(
         request=request,
@@ -330,17 +355,19 @@ async def enhance_serial_area(
 async def highlight_defect(
     request: Request,
     file: UploadFile = File(...),
-    x: int = Form(...),
-    y: int = Form(...),
-    width: int = Form(...),
-    height: int = Form(...),
+    x: Optional[int] = Form(None),
+    y: Optional[int] = Form(None),
+    width: Optional[int] = Form(None),
+    height: Optional[int] = Form(None),
     defect_description: Optional[str] = Form(None)
 ):
     """
-    하자 부분 강조 (전용 엔드포인트)
+    하자 자동 감지 및 강조 (전용 엔드포인트)
     
-    - x, y: 하자 영역 시작 좌표
-    - width, height: 하자 영역 크기
+    이미지에서 하자를 자동으로 감지하여 빨간색 원으로 표시합니다.
+    하자가 없으면 원본 이미지를 그대로 반환합니다.
+    
+    - x, y, width, height: 선택적 영역 지정 (지정하지 않으면 전체 이미지에서 자동 감지)
     - defect_description: 하자 설명 (선택)
     """
     additional = None

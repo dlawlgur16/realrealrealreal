@@ -1,4 +1,5 @@
 @echo off
+setlocal enabledelayedexpansion
 chcp 65001 >nul
 echo ========================================
 echo    당근 부스터 - NGROK 완전 자동 실행
@@ -55,22 +56,54 @@ REM 2. ngrok 인증 확인
 REM ============================================
 echo [2/6] ngrok 인증 확인 중...
 
-REM ngrok 설정 파일 확인 (Windows의 경우)
-set NGROK_CONFIG=%USERPROFILE%\.ngrok2\ngrok.yml
+REM ngrok 설정 파일 확인 (Windows의 경우 - ngrok v3)
+set NGROK_CONFIG=%LOCALAPPDATA%\ngrok\ngrok.yml
+if not exist "%NGROK_CONFIG%" (
+    set NGROK_CONFIG=%USERPROFILE%\.ngrok2\ngrok.yml
+)
+
 if not exist "%NGROK_CONFIG%" (
     echo.
     echo ⚠️  ngrok 인증 토큰이 설정되지 않았습니다!
     echo.
-    echo 1. https://dashboard.ngrok.com/signup 접속 (무료)
-    echo 2. Google/GitHub로 로그인
-    echo 3. https://dashboard.ngrok.com/get-started/your-authtoken 접속
-    echo 4. 인증 토큰 복사
-    echo.
-    set /p NGROK_TOKEN="인증 토큰을 입력하세요 (또는 Enter로 건너뛰기): "
+    
+    REM .env 파일에서 NGROK_AUTHTOKEN 읽기
+    set NGROK_TOKEN=
+    if exist .env (
+        echo ✅ .env 파일에서 NGROK_AUTHTOKEN 확인 중...
+        for /f "tokens=2 delims==" %%a in ('findstr /i /c:"NGROK_AUTHTOKEN" .env 2^>nul') do (
+            set "NGROK_TOKEN=%%a"
+            REM 따옴표 제거
+            set "NGROK_TOKEN=!NGROK_TOKEN:"=!"
+            REM 앞뒤 공백 제거
+            for /f "tokens=*" %%b in ("!NGROK_TOKEN!") do set "NGROK_TOKEN=%%b"
+        )
+    )
+    
+    REM .env에서 토큰을 찾지 못한 경우 사용자 입력 요청
+    if "!NGROK_TOKEN!"=="" (
+        echo.
+        echo 1. https://dashboard.ngrok.com/signup 접속 (무료)
+        echo 2. Google/GitHub로 로그인
+        echo 3. https://dashboard.ngrok.com/get-started/your-authtoken 접속
+        echo 4. 인증 토큰 복사
+        echo 5. .env 파일에 NGROK_AUTHTOKEN=YOUR_TOKEN 형식으로 추가
+        echo.
+        set /p NGROK_TOKEN="인증 토큰을 입력하세요 (또는 Enter로 건너뛰기): "
+    ) else (
+        echo ✅ .env 파일에서 NGROK_AUTHTOKEN 발견!
+    )
 
     if not "!NGROK_TOKEN!"=="" (
-        "%NGROK_CMD%" config add-authtoken !NGROK_TOKEN!
-        echo ✅ 인증 토큰이 설정되었습니다!
+        "%NGROK_CMD%" config add-authtoken "!NGROK_TOKEN!"
+        if !errorlevel! equ 0 (
+            echo ✅ 인증 토큰이 설정되었습니다!
+        ) else (
+            echo ❌ 토큰 설정 실패. 수동으로 설정해주세요:
+            echo    "%NGROK_CMD%" config add-authtoken YOUR_TOKEN
+            pause
+            exit /b 1
+        )
     ) else (
         echo ! 경고: 인증 없이 계속합니다 (제한된 기능)
     )

@@ -64,10 +64,18 @@ async def call_gemini_api(
         contents.append(image_input)
         
         print(f"[DEBUG] Gemini API 호출 중... (모델: {GEMINI_MODEL}, 총 {len(contents)}개 콘텐츠)")
+        print(f"[DEBUG] 입력 이미지 크기: {image_input.size[0]}x{image_input.size[1]} pixels")
         # Gemini API 호출 - 이미지 생성 설정 추가
+        # 입력 이미지 크기를 프롬프트에 추가하여 고해상도 출력 유도
+        contents_with_size = contents.copy()
+        if len(contents_with_size) > 0 and isinstance(contents_with_size[-1], str):
+            # 마지막 프롬프트에 해상도 정보 추가
+            size_hint = f"\n\n[CRITICAL RESOLUTION REQUIREMENT]\nThe input image is {image_input.size[0]}x{image_input.size[1]} pixels. The output image MUST be at least the same size or larger. Generate at MINIMUM 2048x2048 pixels, preferably 3072x3072 or 4096x4096 pixels. DO NOT output at 1024x1024."
+            contents_with_size[-1] = contents_with_size[-1] + size_hint
+        
         response = client.models.generate_content(
             model=GEMINI_MODEL,
-            contents=contents,
+            contents=contents_with_size,
             config=types.GenerateContentConfig(
                 response_modalities=['TEXT', 'IMAGE'],  # 텍스트와 이미지 모두 허용 (문서 예제 방식)
             )
@@ -193,7 +201,8 @@ async def call_gemini_api(
                     if image:
                         print(f"[DEBUG] Part {part_count}: 이미지 발견! 크기: {image.size}")
                         img_byte_arr = io.BytesIO()
-                        image.save(img_byte_arr, format='PNG')
+                        # 원본 품질 유지 (압축 최소화)
+                        image.save(img_byte_arr, format='PNG', optimize=False, compress_level=0)
                         img_byte_arr = img_byte_arr.getvalue()
                         image_base64_result = base64.b64encode(img_byte_arr).decode('utf-8')
                         result["candidates"][0]["content"]["parts"].append({

@@ -205,8 +205,12 @@ export const processImage = async (imageUri, processType, options = {}) => {
 
 /**
  * 포스터형 썸네일 생성
+ * @param {string} imageUri - 메인 이미지 URI
+ * @param {string} style - 스타일 ('minimal', 'vintage', 'modern', 'warm')
+ * @param {string} backgroundColor - 배경 색상 (hex)
+ * @param {string[]} referenceImages - 레퍼런스 이미지 URI 배열
  */
-export const createPoster = async (imageUri, style = 'minimal', backgroundColor = '#F8F8F8') => {
+export const createPoster = async (imageUri, style = 'minimal', backgroundColor = '#F8F8F8', referenceImages = []) => {
   try {
     const formData = new FormData();
 
@@ -223,7 +227,24 @@ export const createPoster = async (imageUri, style = 'minimal', backgroundColor 
     formData.append('style', style);
     formData.append('background_color', backgroundColor);
 
-    console.log('createPoster API 요청:', API_BASE_URL + '/api/poster');
+    // 레퍼런스 이미지 추가
+    if (referenceImages && referenceImages.length > 0) {
+      console.log(`레퍼런스 이미지 ${referenceImages.length}개 추가 중...`);
+      referenceImages.forEach((refUri, index) => {
+        const refFilename = refUri.split('/').pop() || `reference_${index}.jpg`;
+        const refMatch = /\.(\w+)$/.exec(refFilename);
+        const refType = refMatch ? `image/${refMatch[1]}` : 'image/jpeg';
+        
+        formData.append('reference_files', {
+          uri: refUri,
+          name: refFilename,
+          type: refType,
+        });
+      });
+      console.log('레퍼런스 이미지 추가 완료');
+    }
+
+    console.log('createPoster API 요청:', API_BASE_URL + '/api/poster', `레퍼런스: ${referenceImages.length}개`);
 
     const response = await callApiWithRetry(async () => {
       return await axios.post(

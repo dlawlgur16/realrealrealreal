@@ -19,6 +19,7 @@ export default function PosterScreen({ navigation }) {
   const [processedImage, setProcessedImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState('minimal');
+  const [referenceImages, setReferenceImages] = useState([]);
 
   const styles_options = [
     { id: 'minimal', label: '미니멀', emoji: '⚪' },
@@ -66,6 +67,60 @@ export default function PosterScreen({ navigation }) {
     }
   };
 
+  const pickReferenceImage = async () => {
+    Alert.alert(
+      '상품 사진 추가',
+      '어떤 방법으로 추가하시겠어요?',
+      [
+        {
+          text: '갤러리에서 선택',
+          onPress: async () => {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert('권한 필요', '사진 라이브러리 접근 권한이 필요합니다.');
+              return;
+            }
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              allowsMultipleSelection: true,
+              quality: 1,
+            });
+            if (!result.canceled && result.assets) {
+              const newImages = result.assets.map(asset => asset.uri);
+              setReferenceImages([...referenceImages, ...newImages]);
+            }
+          },
+        },
+        {
+          text: '카메라로 촬영',
+          onPress: async () => {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert('권한 필요', '카메라 접근 권한이 필요합니다.');
+              return;
+            }
+            const result = await ImagePicker.launchCameraAsync({
+              allowsEditing: true,
+              quality: 1,
+            });
+            if (!result.canceled && result.assets) {
+              setReferenceImages([...referenceImages, result.assets[0].uri]);
+            }
+          },
+        },
+        {
+          text: '취소',
+          style: 'cancel',
+        },
+      ]
+    );
+  };
+
+  const removeReferenceImage = (index) => {
+    const newImages = referenceImages.filter((_, i) => i !== index);
+    setReferenceImages(newImages);
+  };
+
   const processImage = async () => {
     if (!selectedImage) {
       Alert.alert('알림', '먼저 이미지를 선택해주세요.');
@@ -74,10 +129,10 @@ export default function PosterScreen({ navigation }) {
 
     setLoading(true);
     try {
-      const result = await createPoster(selectedImage, selectedStyle);
+      const result = await createPoster(selectedImage, selectedStyle, referenceImages);
 
       if (result.success && result.image_base64) {
-        setProcessedImage(`data:image/jpeg;base64,${result.image_base64}`);
+        setProcessedImage(`data:image/png;base64,${result.image_base64}`);
         Alert.alert('성공', result.message);
       } else {
         Alert.alert('실패', result.message || '이미지 처리에 실패했습니다.');
@@ -168,6 +223,54 @@ export default function PosterScreen({ navigation }) {
               >
                 <Text style={styles.changeButtonText}>다른 이미지 선택</Text>
               </TouchableOpacity>
+            </View>
+          )}
+
+          {/* 상품 추가 사진 (여러 각도) */}
+          {selectedImage && (
+            <View style={styles.referenceContainer}>
+              <View style={styles.referenceHeader}>
+                <View>
+                  <Text style={styles.sectionTitle}>상품 추가 사진</Text>
+                  <Text style={styles.referenceSubtitle}>
+                    앞면, 옆면, 뒷면 등 여러 각도 사진을 추가하세요
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.addReferenceButton}
+                  onPress={pickReferenceImage}
+                >
+                  <Text style={styles.addReferenceButtonText}>+ 추가</Text>
+                </TouchableOpacity>
+              </View>
+              {referenceImages.length > 0 && (
+                <View style={styles.referenceImagesGrid}>
+                  {referenceImages.map((uri, index) => (
+                    <View key={index} style={styles.referenceImageWrapper}>
+                      <Image source={{ uri }} style={styles.referenceImage} />
+                      <View style={styles.referenceImageLabel}>
+                        <Text style={styles.referenceImageLabelText}>
+                          사진 {index + 1}
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.removeReferenceButton}
+                        onPress={() => removeReferenceImage(index)}
+                      >
+                        <Text style={styles.removeReferenceButtonText}>×</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
+              {referenceImages.length === 0 && (
+                <View style={styles.emptyReferenceContainer}>
+                  <Text style={styles.emptyReferenceText}>
+                    📸 상품의 여러 각도 사진을 추가하면{'\n'}
+                    더 정확한 포스터를 생성할 수 있습니다
+                  </Text>
+                </View>
+              )}
             </View>
           )}
 
@@ -383,5 +486,96 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  referenceContainer: {
+    marginBottom: 20,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+  },
+  referenceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  referenceSubtitle: {
+    fontSize: 12,
+    color: '#6C757D',
+    marginTop: 4,
+  },
+  addReferenceButton: {
+    backgroundColor: '#FF6B6B',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  addReferenceButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  referenceImagesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  referenceImageWrapper: {
+    position: 'relative',
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  referenceImage: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#E9ECEF',
+  },
+  referenceImageLabel: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  referenceImageLabelText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  removeReferenceButton: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: 'rgba(255, 107, 107, 0.9)',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeReferenceButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+    lineHeight: 20,
+  },
+  emptyReferenceContainer: {
+    padding: 20,
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  emptyReferenceText: {
+    fontSize: 13,
+    color: '#6C757D',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

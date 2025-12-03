@@ -34,57 +34,109 @@ No external props, hands, or any additional elements in the frame.
 Maintain product authenticity - don't over-process the product itself, only enhance the environment around it.
 
 [Output Specification]
-Resolution: Extremely high-quality, poster-worthy resolution (e.g., 1500x1500 pixels or higher) with professional photography quality.
-Aspect Ratio: Square (1:1 ratio) for universal display, optimized for poster-style presentation."""
+Resolution: CRITICAL - You MUST generate the image at the HIGHEST POSSIBLE RESOLUTION. The output image MUST be at least 2048x2048 pixels, and preferably 3072x3072 or 4096x4096 pixels. DO NOT generate at 1024x1024 or any lower resolution. The image MUST match or exceed the input image's resolution. Maximum quality, zero compression.
+Aspect Ratio: Square (1:1 ratio) for universal display, optimized for poster-style presentation.
+Image Quality: Output at 100% quality with absolutely no compression or downscaling. Preserve every pixel detail at maximum resolution."""
 
 SERIAL_ENHANCEMENT_PROMPT = """[Instruction]
-You are an expert digital photo editor specializing in enhancing specific details for product authentication in secondhand marketplaces. Your task is to apply targeted, subtle enhancements only to the indicated region (serial number, model name, certification marks area) to improve legibility, while preserving the integrity and original appearance of the rest of the image.
+You are an expert digital photo editor specializing in privacy protection for product images in secondhand marketplaces. Your task is to automatically detect and remove sensitive information (serial numbers, model names, certification marks, authentication codes, IMEI numbers, etc.) from the product image while preserving the rest of the image perfectly.
 
-[Target Area Enhancement - CRUCIAL]
-Objective: The primary goal is to make any text within the target area highly legible.
-Enhancements:
-- Sharpening: Apply a subtle sharpening filter to increase the clarity of text and fine lines.
-- Contrast/Brightness: Slightly increase local contrast and brightness to improve readability.
-- Noise Reduction: Gently reduce noise or pixelation to clean up the text.
-- Color Correction: If necessary, slightly adjust colors to improve text visibility.
+[Automatic Detection - CRUCIAL]
+Objective: Automatically identify and locate ALL sensitive information in the image, including:
+- Serial numbers (any alphanumeric sequences that look like serial numbers)
+- Model names and model numbers
+- Certification marks (CE, FCC, KC, etc.)
+- IMEI numbers
+- Authentication codes
+- Barcode numbers
+- QR codes containing sensitive information
+- Any text that could be used to identify or authenticate the specific product
+
+Detection Method:
+- Scan the entire image carefully for text, numbers, codes, and identification marks
+- Look for patterns typical of serial numbers (alphanumeric sequences, often in small print)
+- Identify certification logos and marks
+- Find model numbers and product codes
+- Detect any authentication-related information
+
+[Removal Process - CRUCIAL]
+Once detected, you must:
+1. Completely remove the sensitive information from the image
+2. Fill the removed area with the surrounding background/texture in a natural, seamless way
+3. Use intelligent inpainting to blend the removal area with the surrounding image
+4. Ensure the removal looks natural and does not appear edited or manipulated
+5. Maintain the original lighting, color, and texture of the surrounding area
 
 [Integrity Preservation]
-CRITICAL: Do NOT modify, alter, or enhance any part of the image outside the text/serial number area.
-Preserve the original background, lighting, color, texture, and any existing wear on the product.
+CRITICAL: 
+- Do NOT modify, alter, or change ANY part of the image outside the sensitive information areas
+- Preserve the original product appearance, background, lighting, color, texture, and any existing wear
+- Only remove the sensitive information - everything else must remain exactly as in the original
+- The product itself should look identical, just without the sensitive identifying information
 
 [Output Specification]
 Resolution: Maintain the original resolution.
-Format: Output the enhanced image preserving original quality.
+Format: Output the cleaned image preserving original quality.
+The removed areas should be completely seamless and natural-looking.
 
 [Exclusions - Mandatory]
-No background alteration, replacement, or blurring.
-No addition of text, graphics, logos, or watermarks.
-No global filters or stylistic changes to the overall image."""
+- No visible editing artifacts or signs of manipulation
+- No addition of text, graphics, logos, or watermarks
+- No global filters or stylistic changes to the overall image
+- The final image should look as if the sensitive information was never there in the first place"""
 
 DEFECT_HIGHLIGHT_PROMPT = """[Instruction]
-You are an expert digital photo editor specializing in honest product presentation for secondhand marketplaces. Your task is to clearly but aesthetically highlight the defect/damage area in the product image to build trust with potential buyers.
+You are an expert product inspector specializing in honest product presentation for secondhand marketplaces. Your task is to automatically detect defects/damage in the product image and highlight them with a red circle ONLY if defects actually exist. If no defects are found, return the original image unchanged.
 
-[Defect Highlighting - CRUCIAL]
-Objective: Make the defect area clearly visible while maintaining the overall aesthetic quality.
-Approach:
-- Create a subtle visual indicator around the defect area (thin circle, arrow, or soft highlight)
-- Use a non-intrusive color (soft blue or subtle orange) that doesn't look aggressive
-- The highlight should draw attention without making the product look worse than it is
-- Ensure the actual condition of the defect is clearly visible
+[CRITICAL - Defect Detection First]
+Step 1: DEFECT DETECTION
+- Carefully examine the entire product image for any defects, damage, scratches, dents, cracks, stains, wear, or imperfections
+- Look for: scratches, dents, cracks, chips, stains, discoloration, wear marks, tears, holes, missing parts, broken parts, etc.
+- Be honest and accurate - only identify REAL defects that actually exist in the image
+- Do NOT create or imagine defects that are not there
+- Do NOT mark normal product features, textures, or design elements as defects
 
-[Style Guidelines]
-Visual Style: Clean, professional, trustworthy
-Indicator Style: Minimalist, elegant marking
-Color: Use colors that suggest transparency and honesty (soft blue, muted orange)
+Step 2: DECISION
+- IF defects are found: Proceed to Step 3 (Highlighting)
+- IF NO defects are found: Return the original image EXACTLY as it is, with NO modifications
+
+[Defect Highlighting - ONLY if defects exist]
+If defects are detected, you must:
+- Draw a CLEAR, VISIBLE RED CIRCLE around EACH defect/damage area
+- Use bright red color (#FF0000 or #FF4444) - this is mandatory
+- Circle line thickness: 4-5 pixels for clear visibility
+- Style: Solid red line, no dashes or dots
+- The circle should completely enclose each defect area with some margin
+- If multiple defects exist, draw a separate red circle around each one
+- If the defect area is irregular, use an oval or rounded rectangle that encompasses the entire defect
+
+[Image Integrity - CRUCIAL]
+CRITICAL:
+- Do NOT modify, alter, or change the defect itself - show it exactly as it is
+- Do NOT modify any other part of the product image
+- Preserve the original product appearance, background, lighting, color, and texture
+- Only add the red circle(s) - everything else must remain exactly as in the original
+- The defect should be clearly visible through the circle, not obscured
 
 [Output Specification]
 Resolution: Maintain the original resolution.
-The defect should be clearly identifiable but the overall image should still look professional.
+Format: Output the image preserving original quality.
+
+IF DEFECTS FOUND:
+- Return the image with red circle(s) around the defect(s)
+- The red circle(s) should be clearly visible
+
+IF NO DEFECTS FOUND:
+- Return the original image EXACTLY as it is, with NO modifications
+- Do NOT add any circles, marks, or indicators
+- The image should be identical to the input
 
 [Exclusions - Mandatory]
-Do not exaggerate or minimize the defect
-No dramatic effects that make the image look unprofessional
-No text labels unless specifically requested"""
+- Do NOT create or imagine defects that don't exist
+- Do NOT mark normal product features as defects
+- Do NOT exaggerate or minimize real defects - show them exactly as they are
+- Do NOT add text labels unless specifically requested
+- If no defects exist, do NOT add any visual indicators"""
 
 
 def get_prompt_by_type(process_type: str, additional_instructions: str = None) -> str:

@@ -16,7 +16,7 @@ except ImportError:
 
 # Gemini API 설정
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = "gemini-2.5-flash-image"
+GEMINI_MODEL = "gemini-3-pro-image-preview"
 
 # Gemini 클라이언트 초기화 (API 키가 없으면 None)
 client = None
