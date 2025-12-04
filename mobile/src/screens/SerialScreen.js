@@ -1,16 +1,5 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
-  ScrollView,
-  ActivityIndicator,
-  Alert,
-  SafeAreaView,
-  TextInput,
-} from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, ActivityIndicator, Alert, SafeAreaView, Animated } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { enhanceSerial } from '../services/api';
 import { saveBase64Image } from '../utils/storage';
@@ -19,46 +8,27 @@ export default function SerialScreen({ navigation }) {
   const [selectedImage, setSelectedImage] = useState(null);
   const [processedImage, setProcessedImage] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [area, setArea] = useState({
-    x: 100,
-    y: 100,
-    width: 200,
-    height: 100,
-  });
+  const glowAnim = useRef(new Animated.Value(0)).current;
+  const NEON_COLOR = '#B026FF';
+
+  React.useEffect(() => {
+    Animated.loop(Animated.sequence([
+      Animated.timing(glowAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
+      Animated.timing(glowAnim, { toValue: 0, duration: 2000, useNativeDriver: true }),
+    ])).start();
+  }, []);
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
     if (status !== 'granted') {
-      Alert.alert('권한 필요', '사진 라이브러리 접근 권한이 필요합니다.');
+      Alert.alert('Permission Required', 'Photo library access permission is required.');
       return;
     }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 1,
     });
-
-    if (!result.canceled) {
-      setSelectedImage(result.assets[0].uri);
-      setProcessedImage(null);
-    }
-  };
-
-  const takePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-
-    if (status !== 'granted') {
-      Alert.alert('권한 필요', '카메라 접근 권한이 필요합니다.');
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      quality: 1,
-    });
-
     if (!result.canceled) {
       setSelectedImage(result.assets[0].uri);
       setProcessedImage(null);
@@ -67,29 +37,21 @@ export default function SerialScreen({ navigation }) {
 
   const processImage = async () => {
     if (!selectedImage) {
-      Alert.alert('알림', '먼저 이미지를 선택해주세요.');
+      Alert.alert('Notice', 'Please select an image first.');
       return;
     }
-
     setLoading(true);
     try {
-      const result = await enhanceSerial(
-        selectedImage,
-        area.x,
-        area.y,
-        area.width,
-        area.height
-      );
-
+      const result = await enhanceSerial(selectedImage, 0, 0, 0, 0);
       if (result.success && result.image_base64) {
-        setProcessedImage(`data:image/jpeg;base64,${result.image_base64}`);
-        Alert.alert('성공', result.message);
+        setProcessedImage(`data:image/png;base64,${result.image_base64}`);
+        Alert.alert('Success', 'Processing complete');
       } else {
-        Alert.alert('실패', result.message || '이미지 처리에 실패했습니다.');
+        Alert.alert('Failed', result.message || 'Image processing failed.');
       }
     } catch (error) {
-      console.error('처리 에러:', error);
-      Alert.alert('오류', '이미지 처리 중 오류가 발생했습니다.');
+      console.error('Processing error:', error);
+      Alert.alert('Error', error.message || 'An error occurred during image processing.');
     } finally {
       setLoading(false);
     }
@@ -97,156 +59,112 @@ export default function SerialScreen({ navigation }) {
 
   const saveImage = async () => {
     if (!processedImage) {
-      Alert.alert('알림', '저장할 이미지가 없습니다.');
+      Alert.alert('Notice', 'No image to save.');
       return;
     }
-
     try {
-      await saveBase64Image(processedImage, `serial_${Date.now()}.jpg`);
-      Alert.alert('저장 완료', '이미지가 갤러리에 저장되었습니다.');
+      await saveBase64Image(processedImage, `privacy_${Date.now()}.jpg`);
+      Alert.alert('Saved', 'Image has been saved to gallery.');
     } catch (error) {
-      console.error('저장 에러:', error);
-      Alert.alert('오류', '이미지 저장 중 오류가 발생했습니다.');
+      console.error('Save error:', error);
+      Alert.alert('Save Failed', error.message || 'An error occurred while saving the image.');
     }
   };
 
+  const glowOpacity = glowAnim.interpolate({ inputRange: [0, 1], outputRange: [0.3, 0.8] });
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backButton}>‹ 뒤로</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>인증 정보 선명화</Text>
-          <Text style={styles.subtitle}>
-            시리얼 넘버나 인증서를 깔끔하게 보정하세요
-          </Text>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonContainer}>
+          <Text style={styles.backButton}>←</Text>
+        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <View style={styles.headerTop}>
+            <Text style={styles.title}>PRIVACY BLUR</Text>
+            <Animated.View style={[styles.statusDot, { backgroundColor: NEON_COLOR, opacity: glowOpacity }]} />
+          </View>
+          <View style={styles.headerDivider} />
+          <Text style={styles.subtitle}>MODULE//02 // CONCEAL</Text>
         </View>
+      </View>
 
+      <ScrollView style={styles.scrollView}>
         <View style={styles.content}>
           {!selectedImage && (
-            <View style={styles.imagePlaceholder}>
-              <Text style={styles.placeholderIcon}>✨</Text>
-              <Text style={styles.placeholderText}>
-                인증 정보가 포함된 이미지를 선택하세요
-              </Text>
-              <View style={styles.buttonRow}>
-                <TouchableOpacity
-                  style={styles.pickButton}
-                  onPress={pickImage}
-                >
-                  <Text style={styles.pickButtonText}>갤러리에서 선택</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.pickButton}
-                  onPress={takePhoto}
-                >
-                  <Text style={styles.pickButtonText}>사진 촬영</Text>
-                </TouchableOpacity>
+            <View style={styles.uploadFrame}>
+              <View style={[styles.cornerBracket, styles.cornerTopLeft]} />
+              <View style={[styles.cornerBracket, styles.cornerTopRight]} />
+              <View style={styles.uploadContent}>
+                <Text style={[styles.uploadIcon, { color: NEON_COLOR }]}>▹</Text>
+                <Text style={styles.uploadTitle}>INPUT REQUIRED</Text>
+                <View style={[styles.dividerShort, { backgroundColor: NEON_COLOR }]} />
+                <Text style={styles.uploadSubtext}>JPG, PNG // MAX 10MB</Text>
+                <View style={styles.uploadButtons}>
+                  <TouchableOpacity style={[styles.uploadButton, { borderColor: NEON_COLOR }]} onPress={pickImage}>
+                    <Text style={[styles.uploadButtonText, { color: NEON_COLOR }]}>GALLERY</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
+              <View style={[styles.cornerBracket, styles.cornerBottomLeft]} />
+              <View style={[styles.cornerBracket, styles.cornerBottomRight]} />
             </View>
           )}
 
           {selectedImage && (
-            <View style={styles.imageContainer}>
-              <Text style={styles.sectionTitle}>원본 이미지</Text>
-              <Image source={{ uri: selectedImage }} style={styles.image} />
-              <TouchableOpacity
-                style={styles.changeButton}
-                onPress={pickImage}
-              >
-                <Text style={styles.changeButtonText}>다른 이미지 선택</Text>
+            <View style={styles.imageSection}>
+              <View style={styles.sectionHeader}>
+                <View style={[styles.sectionIndicator, { backgroundColor: NEON_COLOR }]} />
+                <Text style={styles.sectionTitle}>SOURCE IMAGE</Text>
+              </View>
+              <View style={styles.imageFrame}>
+                <Image source={{ uri: selectedImage }} style={styles.image} />
+                <View style={styles.imageOverlay}>
+                  <Text style={styles.imageLabel}>INPUT</Text>
+                </View>
+              </View>
+              <TouchableOpacity style={styles.changeButton} onPress={pickImage}>
+                <Text style={styles.changeButtonText}>↻ CHANGE</Text>
               </TouchableOpacity>
             </View>
           )}
 
           {selectedImage && (
-            <View style={styles.areaContainer}>
-              <Text style={styles.sectionTitle}>인증 영역 좌표</Text>
-              <Text style={styles.helpText}>
-                선명화할 영역의 위치와 크기를 입력하세요
-              </Text>
-
-              <View style={styles.inputRow}>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>X 좌표</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={String(area.x)}
-                    onChangeText={(text) =>
-                      setArea({ ...area, x: parseInt(text) || 0 })
-                    }
-                    keyboardType="numeric"
-                    placeholder="100"
-                  />
-                </View>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Y 좌표</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={String(area.y)}
-                    onChangeText={(text) =>
-                      setArea({ ...area, y: parseInt(text) || 0 })
-                    }
-                    keyboardType="numeric"
-                    placeholder="100"
-                  />
-                </View>
+            <TouchableOpacity style={[styles.processButton, { borderColor: NEON_COLOR }]} onPress={processImage} disabled={loading}>
+              <Animated.View style={[styles.buttonGlow, { backgroundColor: NEON_COLOR, opacity: loading ? 0.5 : glowOpacity }]} />
+              <View style={styles.processButtonContent}>
+                {loading ? (
+                  <>
+                    <ActivityIndicator color={NEON_COLOR} size="small" />
+                    <Text style={[styles.processButtonText, { color: NEON_COLOR }]}>PROCESSING...</Text>
+                  </>
+                ) : (
+                  <Text style={[styles.processButtonText, { color: NEON_COLOR }]}>▸ EXECUTE BLUR</Text>
+                )}
               </View>
-
-              <View style={styles.inputRow}>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>너비</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={String(area.width)}
-                    onChangeText={(text) =>
-                      setArea({ ...area, width: parseInt(text) || 0 })
-                    }
-                    keyboardType="numeric"
-                    placeholder="200"
-                  />
-                </View>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>높이</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={String(area.height)}
-                    onChangeText={(text) =>
-                      setArea({ ...area, height: parseInt(text) || 0 })
-                    }
-                    keyboardType="numeric"
-                    placeholder="100"
-                  />
-                </View>
-              </View>
-            </View>
-          )}
-
-          {selectedImage && (
-            <TouchableOpacity
-              style={[styles.processButton, loading && styles.buttonDisabled]}
-              onPress={processImage}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text style={styles.processButtonText}>선명화 처리하기</Text>
-              )}
             </TouchableOpacity>
           )}
 
           {processedImage && (
-            <View style={styles.resultContainer}>
-              <Text style={styles.sectionTitle}>처리된 이미지</Text>
-              <Image source={{ uri: processedImage }} style={styles.image} />
-              <TouchableOpacity
-                style={styles.saveButton}
-                onPress={saveImage}
-              >
-                <Text style={styles.saveButtonText}>갤러리에 저장</Text>
-              </TouchableOpacity>
+            <View style={styles.resultSection}>
+              <View style={styles.resultHeader}>
+                <Animated.View style={[styles.resultIndicator, { backgroundColor: NEON_COLOR, opacity: glowOpacity }]} />
+                <Text style={styles.resultTitle}>OUTPUT // COMPLETE</Text>
+              </View>
+              <View style={styles.imageFrame}>
+                <Image source={{ uri: processedImage }} style={styles.image} />
+                <View style={styles.imageOverlay}>
+                  <Text style={styles.imageLabel}>OUTPUT</Text>
+                </View>
+              </View>
+              <View style={styles.resultActions}>
+                <TouchableOpacity style={[styles.actionButton, { borderColor: NEON_COLOR }]} onPress={saveImage}>
+                  <Text style={[styles.actionButtonText, { color: NEON_COLOR }]}>↓ SAVE</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionButton} onPress={() => setProcessedImage(null)}>
+                  <Text style={styles.actionButtonText}>↻ RETRY</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         </View>
@@ -256,153 +174,51 @@ export default function SerialScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  header: {
-    padding: 20,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E9ECEF',
-  },
-  backButton: {
-    fontSize: 24,
-    color: '#4ECDC4',
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#212529',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#6C757D',
-  },
-  content: {
-    padding: 20,
-  },
-  imagePlaceholder: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 40,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  placeholderIcon: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
-  placeholderText: {
-    fontSize: 16,
-    color: '#6C757D',
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  pickButton: {
-    backgroundColor: '#4ECDC4',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  pickButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  imageContainer: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#212529',
-    marginBottom: 12,
-  },
-  image: {
-    width: '100%',
-    height: 300,
-    borderRadius: 12,
-    backgroundColor: '#E9ECEF',
-  },
-  changeButton: {
-    marginTop: 12,
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#DEE2E6',
-    alignItems: 'center',
-  },
-  changeButtonText: {
-    color: '#6C757D',
-    fontSize: 14,
-  },
-  areaContainer: {
-    marginBottom: 20,
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 12,
-  },
-  helpText: {
-    fontSize: 12,
-    color: '#6C757D',
-    marginBottom: 16,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
-  },
-  inputGroup: {
-    flex: 1,
-  },
-  inputLabel: {
-    fontSize: 12,
-    color: '#6C757D',
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: '#F8F9FA',
-    borderWidth: 1,
-    borderColor: '#E9ECEF',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
-  },
-  processButton: {
-    backgroundColor: '#4ECDC4',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  processButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  resultContainer: {
-    marginTop: 20,
-  },
-  saveButton: {
-    backgroundColor: '#4ECDC4',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  saveButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  container: { flex: 1, backgroundColor: '#1C1C1C' },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20, backgroundColor: '#1C1C1C', borderBottomWidth: 1, borderBottomColor: '#3D3D3D' },
+  backButtonContainer: { marginRight: 16 },
+  backButton: { fontSize: 28, color: '#E8E8E8', fontWeight: '300' },
+  headerContent: { flex: 1 },
+  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  title: { fontFamily: 'monospace', fontSize: 20, fontWeight: '700', color: '#E8E8E8', letterSpacing: 2 },
+  statusDot: { width: 8, height: 8, borderRadius: 4 },
+  headerDivider: { height: 1, backgroundColor: '#3D3D3D', marginBottom: 8 },
+  subtitle: { fontFamily: 'monospace', fontSize: 10, color: '#666666', letterSpacing: 1 },
+  scrollView: { flex: 1 },
+  content: { padding: 20 },
+  uploadFrame: { backgroundColor: '#2A2A2A', borderWidth: 1, borderColor: '#3D3D3D', padding: 40, position: 'relative', marginBottom: 24 },
+  cornerBracket: { position: 'absolute', width: 16, height: 16, borderColor: '#555555' },
+  cornerTopLeft: { top: -1, left: -1, borderTopWidth: 2, borderLeftWidth: 2 },
+  cornerTopRight: { top: -1, right: -1, borderTopWidth: 2, borderRightWidth: 2 },
+  cornerBottomLeft: { bottom: -1, left: -1, borderBottomWidth: 2, borderLeftWidth: 2 },
+  cornerBottomRight: { bottom: -1, right: -1, borderBottomWidth: 2, borderRightWidth: 2 },
+  uploadContent: { alignItems: 'center' },
+  uploadIcon: { fontSize: 48, marginBottom: 16 },
+  uploadTitle: { fontFamily: 'monospace', fontSize: 16, fontWeight: '700', color: '#E8E8E8', letterSpacing: 2, marginBottom: 12 },
+  dividerShort: { width: 60, height: 2, marginBottom: 12 },
+  uploadSubtext: { fontFamily: 'monospace', fontSize: 10, color: '#888888', marginBottom: 24, letterSpacing: 1 },
+  uploadButtons: { flexDirection: 'row', gap: 12, width: '100%' },
+  uploadButton: { flex: 1, borderWidth: 2, backgroundColor: '#2A2A2A', paddingVertical: 14, alignItems: 'center' },
+  uploadButtonText: { fontFamily: 'monospace', fontSize: 13, fontWeight: '700', letterSpacing: 1.5 },
+  imageSection: { marginBottom: 24 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  sectionIndicator: { width: 4, height: 12, marginRight: 8 },
+  sectionTitle: { fontFamily: 'monospace', fontSize: 12, fontWeight: '700', color: '#E8E8E8', letterSpacing: 1.5, flex: 1 },
+  imageFrame: { position: 'relative', borderWidth: 1, borderColor: '#3D3D3D' },
+  image: { width: '100%', height: 280, backgroundColor: '#2A2A2A' },
+  imageOverlay: { position: 'absolute', top: 8, left: 8, backgroundColor: 'rgba(0, 0, 0, 0.7)', paddingHorizontal: 12, paddingVertical: 4 },
+  imageLabel: { fontFamily: 'monospace', fontSize: 10, color: '#E8E8E8', letterSpacing: 1 },
+  changeButton: { marginTop: 8, paddingVertical: 10, borderWidth: 1, borderColor: '#3D3D3D', alignItems: 'center', backgroundColor: '#2A2A2A' },
+  changeButtonText: { fontFamily: 'monospace', fontSize: 11, color: '#888888', letterSpacing: 1 },
+  processButton: { borderWidth: 2, backgroundColor: '#2A2A2A', marginBottom: 24, position: 'relative', overflow: 'hidden' },
+  buttonGlow: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.1 },
+  processButtonContent: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 18, gap: 12 },
+  processButtonText: { fontFamily: 'monospace', fontSize: 14, fontWeight: '700', letterSpacing: 2 },
+  resultSection: { marginBottom: 24 },
+  resultHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  resultIndicator: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
+  resultTitle: { fontFamily: 'monospace', fontSize: 12, fontWeight: '700', color: '#E8E8E8', letterSpacing: 1.5 },
+  resultActions: { flexDirection: 'row', gap: 12, marginTop: 12 },
+  actionButton: { flex: 1, borderWidth: 2, borderColor: '#3D3D3D', backgroundColor: '#2A2A2A', paddingVertical: 14, alignItems: 'center' },
+  actionButtonText: { fontFamily: 'monospace', fontSize: 12, fontWeight: '700', color: '#888888', letterSpacing: 1 },
 });
