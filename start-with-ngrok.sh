@@ -180,11 +180,25 @@ echo ""
 
 cd mobile
 
-# node_modules 확인
+# node_modules 확인 및 expo 의존성 확인
 if [ ! -d "node_modules" ]; then
     echo "! node_modules가 없습니다. npm install 실행 중..."
     npm install
+else
+    echo "✅ node_modules 발견"
 fi
+
+# expo-cli 글로벌 설치 확인 (macOS에서 npx 문제 해결)
+echo ""
+echo "✅ expo 의존성 확인 중..."
+if ! npm list expo &> /dev/null; then
+    echo "! expo 의존성 재설치 중..."
+    npm install
+fi
+
+# npx expo 대신 로컬 expo 사용하도록 캐시 정리
+echo "✅ npm 캐시 정리 중..."
+npx clear-npx-cache 2>/dev/null || true
 
 # API URL 자동 설정 (ngrok URL 감지)
 echo ""
