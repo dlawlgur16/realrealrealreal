@@ -18,29 +18,29 @@ export default function HomeScreen({ navigation }) {
   const features = [
     {
       id: 'poster',
-      title: 'PRO POSTER',
+      title: 'Pro Poster',
       subtitle: '01',
-      description: 'TRANSFORM PRODUCT PHOTOS\nINTO PREMIUM QUALITY',
-      icon: '▸',
-      glowColor: '#00F5FF',
+      description: 'Transform your product photos into stunning, premium-quality images',
+      icon: '🎨',
+      color: '#4A90E2',
       route: 'Poster',
     },
     {
       id: 'serial',
-      title: 'PRIVACY BLUR',
+      title: 'Privacy Blur',
       subtitle: '02',
-      description: 'CONCEAL SENSITIVE\nINFORMATION',
-      icon: '▹',
-      glowColor: '#B026FF',
+      description: 'Automatically remove serial numbers and sensitive information',
+      icon: '🔒',
+      color: '#9B59B6',
       route: 'Serial',
     },
     {
       id: 'defect',
-      title: 'DEFECT SCAN',
+      title: 'Defect Scan',
       subtitle: '03',
-      description: 'EXPOSE FLAWS FOR\nTRANSPARENT SELLING',
-      icon: '▸',
-      glowColor: '#FF6B35',
+      description: 'Detect and highlight product defects for transparent selling',
+      icon: '🔍',
+      color: '#E74C3C',
       route: 'Defect',
     },
   ];
@@ -48,25 +48,6 @@ export default function HomeScreen({ navigation }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const position = useRef(new Animated.Value(0)).current;
   const [isAnimating, setIsAnimating] = useState(false);
-  const glowAnim = useRef(new Animated.Value(0)).current;
-
-  // Neon glow pulse animation
-  React.useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowAnim, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(glowAnim, {
-          toValue: 0,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, []);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -152,37 +133,14 @@ export default function HomeScreen({ navigation }) {
 
   const currentFeature = features[currentIndex];
 
-  const glowOpacity = glowAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.3, 0.8],
-  });
-
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#1C1C1C" />
-
-      {/* Grid Background Pattern */}
-      <View style={styles.gridBackground} />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <Text style={styles.logo}>SNAP//PRO</Text>
-          <View style={styles.statusIndicator}>
-            <Animated.View
-              style={[
-                styles.statusDot,
-                {
-                  backgroundColor: currentFeature.glowColor,
-                  opacity: glowOpacity,
-                }
-              ]}
-            />
-            <Text style={styles.statusText}>READY</Text>
-          </View>
-        </View>
-        <View style={styles.divider} />
-        <Text style={styles.subtitle}>AI-POWERED ENHANCEMENT SYSTEM</Text>
+        <Text style={styles.logo}>SnapPro</Text>
+        <Text style={styles.subtitle}>AI-Powered Product Enhancement</Text>
       </View>
 
       {/* Swipeable Card */}
@@ -195,74 +153,29 @@ export default function HomeScreen({ navigation }) {
             },
           ]}
         >
-          {/* Card Frame */}
-          <View style={styles.cardFrame}>
-            {/* Top Corner Brackets */}
-            <View style={[styles.cornerBracket, styles.cornerTopLeft]} />
-            <View style={[styles.cornerBracket, styles.cornerTopRight]} />
-
-            {/* Feature Number */}
-            <View style={styles.featureNumberContainer}>
-              <Text style={[styles.featureNumber, { color: currentFeature.glowColor }]}>
-                {currentFeature.subtitle}
-              </Text>
-            </View>
-
+          {/* Card */}
+          <View style={[styles.cardFrame, { backgroundColor: currentFeature.color }]}>
             {/* Content */}
             <View style={styles.cardContent}>
               <View style={styles.iconContainer}>
-                <Text style={[styles.icon, { color: currentFeature.glowColor }]}>
+                <Text style={styles.icon}>
                   {currentFeature.icon}
                 </Text>
-                <Animated.View
-                  style={[
-                    styles.iconGlow,
-                    {
-                      backgroundColor: currentFeature.glowColor,
-                      opacity: glowOpacity,
-                    }
-                  ]}
-                />
               </View>
 
               <Text style={styles.featureTitle}>{currentFeature.title}</Text>
-
-              <View style={styles.descriptionContainer}>
-                <View style={[
-                  styles.accentLine,
-                  { backgroundColor: currentFeature.glowColor },
-                  currentIndex === 0 && styles.accentLineLeft,
-                  currentIndex === 1 && styles.accentLineCenter,
-                  currentIndex === 2 && styles.accentLineRight,
-                ]} />
-                <Text style={styles.featureDescription}>
-                  {currentFeature.description}
-                </Text>
-              </View>
+              <Text style={styles.featureDescription}>
+                {currentFeature.description}
+              </Text>
             </View>
-
-            {/* Bottom Corner Brackets */}
-            <View style={[styles.cornerBracket, styles.cornerBottomLeft]} />
-            <View style={[styles.cornerBracket, styles.cornerBottomRight]} />
           </View>
         </Animated.View>
 
-        {/* Swipe Indicators */}
-        {currentIndex > 0 && (
-          <View style={[styles.swipeIndicator, styles.swipeIndicatorLeft]}>
-            <Text style={styles.swipeText}>←</Text>
-          </View>
-        )}
-        {currentIndex < features.length - 1 && (
-          <View style={[styles.swipeIndicator, styles.swipeIndicatorRight]}>
-            <Text style={styles.swipeText}>→</Text>
-          </View>
-        )}
+        {/* Swipe Indicators - removed for cleaner design */}
       </View>
 
       {/* Pagination */}
       <View style={styles.paginationContainer}>
-        <View style={styles.paginationLine} />
         {features.map((feature, index) => (
           <TouchableOpacity
             key={index}
@@ -274,48 +187,28 @@ export default function HomeScreen({ navigation }) {
               style={[
                 styles.dot,
                 currentIndex === index && styles.dotActive,
-                currentIndex === index && { backgroundColor: feature.glowColor },
+                currentIndex === index && { backgroundColor: feature.color },
               ]}
             />
-            <Text style={[
-              styles.dotLabel,
-              currentIndex === index && { color: feature.glowColor },
-            ]}>
-              {feature.subtitle}
-            </Text>
           </TouchableOpacity>
         ))}
-        <View style={styles.paginationLine} />
       </View>
 
       {/* Start Button */}
       <TouchableOpacity
-        style={[styles.startButton, { borderColor: currentFeature.glowColor }]}
+        style={[styles.startButton, { backgroundColor: currentFeature.color }]}
         onPress={handleStart}
         activeOpacity={0.8}
       >
-        <Animated.View
-          style={[
-            styles.buttonGlow,
-            {
-              backgroundColor: currentFeature.glowColor,
-              opacity: glowOpacity,
-            }
-          ]}
-        />
-        <View style={styles.buttonContent}>
-          <Text style={[styles.startButtonText, { color: currentFeature.glowColor }]}>
-            INITIATE
-          </Text>
-          <Text style={styles.startButtonArrow}>▸</Text>
-        </View>
+        <Text style={styles.startButtonText}>
+          Get Started →
+        </Text>
       </TouchableOpacity>
 
       {/* Footer */}
       <View style={styles.footer}>
-        <View style={styles.footerDivider} />
         <Text style={styles.footerText}>
-          SWIPE TO SELECT MODULE // TAP TO EXECUTE
+          Swipe to explore features
         </Text>
       </View>
     </SafeAreaView>
@@ -325,295 +218,125 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1C1C1C',
-  },
-  gridBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    opacity: 0.03,
-    backgroundColor: 'transparent',
+    backgroundColor: '#F8F8F8',
   },
   header: {
     paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: 24,
-  },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   logo: {
-    fontFamily: 'monospace',
-    fontSize: 20,
+    fontSize: 28,
     fontWeight: '700',
-    color: '#E8E8E8',
-    letterSpacing: 2,
-  },
-  statusIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  statusText: {
-    fontFamily: 'monospace',
-    fontSize: 10,
-    color: '#888888',
-    letterSpacing: 1,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#3D3D3D',
-    marginBottom: 12,
+    color: '#333333',
+    marginBottom: 4,
   },
   subtitle: {
-    fontFamily: 'monospace',
-    fontSize: 11,
+    fontSize: 14,
     color: '#666666',
-    letterSpacing: 1.5,
   },
   cardContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
+    paddingVertical: 40,
   },
   card: {
     width: SCREEN_WIDTH - 40,
   },
   cardFrame: {
-    backgroundColor: '#242424',
-    borderWidth: 2,
-    borderColor: '#3D3D3D',
-    padding: 40,
-    position: 'relative',
+    borderRadius: 24,
+    padding: 48,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
+    shadowOpacity: 0.15,
     shadowRadius: 16,
-    elevation: 12,
-  },
-  cornerBracket: {
-    position: 'absolute',
-    width: 24,
-    height: 24,
-    borderColor: '#666666',
-  },
-  cornerTopLeft: {
-    top: -2,
-    left: -2,
-    borderTopWidth: 3,
-    borderLeftWidth: 3,
-  },
-  cornerTopRight: {
-    top: -2,
-    right: -2,
-    borderTopWidth: 3,
-    borderRightWidth: 3,
-  },
-  cornerBottomLeft: {
-    bottom: -2,
-    left: -2,
-    borderBottomWidth: 3,
-    borderLeftWidth: 3,
-  },
-  cornerBottomRight: {
-    bottom: -2,
-    right: -2,
-    borderBottomWidth: 3,
-    borderRightWidth: 3,
-  },
-  featureNumberContainer: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-  },
-  featureNumber: {
-    fontFamily: 'monospace',
-    fontSize: 64,
-    fontWeight: '700',
-    opacity: 0.08,
-    letterSpacing: -2,
+    elevation: 8,
   },
   cardContent: {
     alignItems: 'center',
-    paddingVertical: 32,
   },
   iconContainer: {
-    width: 100,
-    height: 100,
+    width: 120,
+    height: 120,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 32,
-    position: 'relative',
-    borderWidth: 2,
-    borderColor: '#3D3D3D',
-    backgroundColor: '#1C1C1C',
+    marginBottom: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 60,
   },
   icon: {
-    fontSize: 72,
-    fontWeight: '700',
-    zIndex: 2,
-  },
-  iconGlow: {
-    position: 'absolute',
-    width: 80,
-    height: 80,
-    borderRadius: 0,
-    zIndex: 1,
+    fontSize: 64,
   },
   featureTitle: {
-    fontFamily: 'monospace',
-    fontSize: 22,
+    fontSize: 28,
     fontWeight: '700',
-    color: '#E8E8E8',
-    marginBottom: 8,
-    letterSpacing: 4,
+    color: '#FFFFFF',
+    marginBottom: 12,
     textAlign: 'center',
-  },
-  descriptionContainer: {
-    width: '100%',
-    paddingTop: 20,
-    paddingHorizontal: 24,
-    borderTopWidth: 1,
-    borderTopColor: '#3D3D3D',
-    marginTop: 20,
-    position: 'relative',
-  },
-  accentLine: {
-    position: 'absolute',
-    top: -1,
-    width: 80,
-    height: 2,
-  },
-  accentLineLeft: {
-    left: 0,
-  },
-  accentLineCenter: {
-    left: 0,
-    right: 0,
-    marginLeft: 'auto',
-    marginRight: 'auto',
-  },
-  accentLineRight: {
-    right: 0,
   },
   featureDescription: {
-    fontFamily: 'monospace',
-    fontSize: 10,
-    color: '#888888',
-    lineHeight: 16,
-    letterSpacing: 1,
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.9)',
+    lineHeight: 22,
     textAlign: 'center',
-  },
-  swipeIndicator: {
-    position: 'absolute',
-    width: 36,
-    height: 36,
-    borderWidth: 1,
-    borderColor: '#3D3D3D',
-    backgroundColor: '#2A2A2A',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  swipeIndicatorLeft: {
-    left: 30,
-  },
-  swipeIndicatorRight: {
-    right: 30,
-  },
-  swipeText: {
-    color: '#666666',
-    fontSize: 20,
-    fontWeight: '300',
+    paddingHorizontal: 12,
   },
   paginationContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 32,
-    paddingHorizontal: 24,
-  },
-  paginationLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#3D3D3D',
+    paddingVertical: 24,
+    gap: 12,
   },
   dotContainer: {
     alignItems: 'center',
-    paddingHorizontal: 20,
   },
   dot: {
-    width: 6,
-    height: 6,
-    backgroundColor: '#3D3D3D',
-    marginBottom: 6,
-  },
-  dotActive: {
     width: 8,
     height: 8,
+    borderRadius: 4,
+    backgroundColor: '#D0D0D0',
   },
-  dotLabel: {
-    fontFamily: 'monospace',
-    fontSize: 9,
-    color: '#555555',
-    letterSpacing: 1,
+  dotActive: {
+    width: 32,
+    height: 8,
+    borderRadius: 4,
   },
   startButton: {
     marginHorizontal: 24,
-    borderWidth: 2,
-    backgroundColor: '#2A2A2A',
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  buttonGlow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    opacity: 0.1,
-  },
-  buttonContent: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderRadius: 16,
     paddingVertical: 18,
-    gap: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+    marginBottom: 16,
   },
   startButtonText: {
-    fontFamily: 'monospace',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
-    letterSpacing: 3,
-  },
-  startButtonArrow: {
-    fontSize: 20,
-    color: '#E8E8E8',
+    color: '#FFFFFF',
   },
   footer: {
     paddingHorizontal: 24,
     paddingBottom: 24,
-  },
-  footerDivider: {
-    height: 1,
-    backgroundColor: '#3D3D3D',
-    marginBottom: 12,
+    alignItems: 'center',
   },
   footerText: {
-    fontFamily: 'monospace',
-    fontSize: 9,
-    color: '#555555',
+    fontSize: 13,
+    color: '#999999',
     textAlign: 'center',
-    letterSpacing: 1.5,
   },
 });

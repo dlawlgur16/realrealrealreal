@@ -21,34 +21,16 @@ export default function PosterScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState('minimal');
   const [referenceImages, setReferenceImages] = useState([]);
-  const glowAnim = useRef(new Animated.Value(0)).current;
 
-  const NEON_COLOR = '#00F5FF'; // Cyan for Poster
-
-  // Neon glow pulse
-  React.useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowAnim, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(glowAnim, {
-          toValue: 0,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, []);
+  const PRIMARY_COLOR = '#4A90E2'; // Soft Blue
 
   const styles_options = [
-    { id: 'minimal', label: 'EDITORIAL', code: 'MIN' },
-    { id: 'vintage', label: 'FILM', code: 'VIN' },
-    { id: 'catalogue', label: 'STUDIO', code: 'STU' },
-    { id: 'tone_on_tone', label: 'PASTEL', code: 'PAS' },
-    { id: 'dream', label: 'MINIATURE', code: 'DRM' },
+    { id: 'minimal', label: 'POSTER', code: 'MIN' },
+    { id: 'tone_on_tone', label: 'TONE', code: 'TON' },
+    { id: 'modern_luxury', label: 'LUXURY', code: 'LUX' },
+    { id: 'artistic', label: 'ARTISTIC', code: 'ART' },
+    { id: 'hero', label: 'HERO', code: 'HRO' },
+    { id: 'exhibition', label: 'EXHIBIT', code: 'EXH' },
   ];
 
   const pickImage = async () => {
@@ -60,7 +42,7 @@ export default function PosterScreen({ navigation }) {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
+      allowsEditing: false,  // 크롭 없이 원본 그대로 사용
       quality: 1,
     });
 
@@ -78,7 +60,7 @@ export default function PosterScreen({ navigation }) {
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
+      allowsEditing: false,  // 크롭 없이 원본 그대로 사용
       quality: 1,
     });
 
@@ -97,6 +79,7 @@ export default function PosterScreen({ navigation }) {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: false,  // 크롭 없이 원본 그대로 사용
       allowsMultipleSelection: true,
       quality: 1,
     });
@@ -104,6 +87,23 @@ export default function PosterScreen({ navigation }) {
     if (!result.canceled && result.assets) {
       const newImages = result.assets.map(asset => asset.uri);
       setReferenceImages([...referenceImages, ...newImages]);
+    }
+  };
+
+  const takeReferencePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Camera access permission is required.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: false,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setReferenceImages([...referenceImages, result.assets[0].uri]);
     }
   };
 
@@ -165,12 +165,11 @@ export default function PosterScreen({ navigation }) {
         <View style={styles.headerContent}>
           <View style={styles.headerTop}>
             <Text style={styles.title}>PRO POSTER</Text>
-            <Animated.View
+            <View
               style={[
                 styles.statusDot,
                 {
-                  backgroundColor: NEON_COLOR,
-                  opacity: glowOpacity,
+                  backgroundColor: PRIMARY_COLOR,
                 }
               ]}
             />
@@ -189,27 +188,27 @@ export default function PosterScreen({ navigation }) {
               <View style={[styles.cornerBracket, styles.cornerTopRight]} />
 
               <View style={styles.uploadContent}>
-                <Text style={[styles.uploadIcon, { color: NEON_COLOR }]}>▸</Text>
+                <Text style={[styles.uploadIcon, { color: PRIMARY_COLOR }]}>▸</Text>
                 <Text style={styles.uploadTitle}>INPUT REQUIRED</Text>
-                <View style={[styles.dividerShort, { backgroundColor: NEON_COLOR }]} />
+                <View style={[styles.dividerShort, { backgroundColor: PRIMARY_COLOR }]} />
                 <Text style={styles.uploadSubtext}>
                   JPG, PNG // MAX 10MB
                 </Text>
 
                 <View style={styles.uploadButtons}>
                   <TouchableOpacity
-                    style={[styles.uploadButton, { borderColor: NEON_COLOR }]}
+                    style={[styles.uploadButton, { borderColor: PRIMARY_COLOR }]}
                     onPress={pickImage}
                   >
-                    <Text style={[styles.uploadButtonText, { color: NEON_COLOR }]}>
+                    <Text style={[styles.uploadButtonText, { color: PRIMARY_COLOR }]}>
                       GALLERY
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.uploadButton, { borderColor: NEON_COLOR }]}
+                    style={[styles.uploadButton, { borderColor: PRIMARY_COLOR }]}
                     onPress={takePhoto}
                   >
-                    <Text style={[styles.uploadButtonText, { color: NEON_COLOR }]}>
+                    <Text style={[styles.uploadButtonText, { color: PRIMARY_COLOR }]}>
                       CAMERA
                     </Text>
                   </TouchableOpacity>
@@ -225,7 +224,7 @@ export default function PosterScreen({ navigation }) {
           {selectedImage && (
             <View style={styles.imageSection}>
               <View style={styles.sectionHeader}>
-                <View style={[styles.sectionIndicator, { backgroundColor: NEON_COLOR }]} />
+                <View style={[styles.sectionIndicator, { backgroundColor: PRIMARY_COLOR }]} />
                 <Text style={styles.sectionTitle}>SOURCE IMAGE</Text>
               </View>
               <View style={styles.imageFrame}>
@@ -247,14 +246,22 @@ export default function PosterScreen({ navigation }) {
           {selectedImage && (
             <View style={styles.referenceSection}>
               <View style={styles.sectionHeader}>
-                <View style={[styles.sectionIndicator, { backgroundColor: NEON_COLOR }]} />
+                <View style={[styles.sectionIndicator, { backgroundColor: PRIMARY_COLOR }]} />
                 <Text style={styles.sectionTitle}>REFERENCE IMAGES</Text>
-                <TouchableOpacity
-                  style={[styles.addButton, { borderColor: NEON_COLOR }]}
-                  onPress={pickReferenceImage}
-                >
-                  <Text style={[styles.addButtonText, { color: NEON_COLOR }]}>+ ADD</Text>
-                </TouchableOpacity>
+                <View style={styles.referenceButtons}>
+                  <TouchableOpacity
+                    style={[styles.addButton, { borderColor: PRIMARY_COLOR }]}
+                    onPress={pickReferenceImage}
+                  >
+                    <Text style={[styles.addButtonText, { color: PRIMARY_COLOR }]}>+ GALLERY</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.addButton, { borderColor: PRIMARY_COLOR, marginLeft: 8 }]}
+                    onPress={takeReferencePhoto}
+                  >
+                    <Text style={[styles.addButtonText, { color: PRIMARY_COLOR }]}>+ CAMERA</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
               {referenceImages.length > 0 ? (
@@ -288,7 +295,7 @@ export default function PosterScreen({ navigation }) {
           {selectedImage && (
             <View style={styles.styleSection}>
               <View style={styles.sectionHeader}>
-                <View style={[styles.sectionIndicator, { backgroundColor: NEON_COLOR }]} />
+                <View style={[styles.sectionIndicator, { backgroundColor: PRIMARY_COLOR }]} />
                 <Text style={styles.sectionTitle}>PROCESSING MODE</Text>
               </View>
               <View style={styles.styleGrid}>
@@ -297,7 +304,7 @@ export default function PosterScreen({ navigation }) {
                     key={style.id}
                     style={[
                       styles.styleButton,
-                      selectedStyle === style.id && { borderColor: NEON_COLOR },
+                      selectedStyle === style.id && { borderColor: PRIMARY_COLOR },
                     ]}
                     onPress={() => setSelectedStyle(style.id)}
                   >
@@ -305,7 +312,7 @@ export default function PosterScreen({ navigation }) {
                     <Text
                       style={[
                         styles.styleLabel,
-                        selectedStyle === style.id && { color: NEON_COLOR },
+                        selectedStyle === style.id && { color: PRIMARY_COLOR },
                       ]}
                     >
                       {style.label}
@@ -315,7 +322,7 @@ export default function PosterScreen({ navigation }) {
                         style={[
                           styles.styleGlow,
                           {
-                            backgroundColor: NEON_COLOR,
+                            backgroundColor: PRIMARY_COLOR,
                             opacity: glowOpacity,
                           }
                         ]}
@@ -330,7 +337,7 @@ export default function PosterScreen({ navigation }) {
           {/* Process Button */}
           {selectedImage && (
             <TouchableOpacity
-              style={[styles.processButton, { borderColor: NEON_COLOR }]}
+              style={[styles.processButton, { borderColor: PRIMARY_COLOR }]}
               onPress={processImage}
               disabled={loading}
             >
@@ -338,7 +345,7 @@ export default function PosterScreen({ navigation }) {
                 style={[
                   styles.buttonGlow,
                   {
-                    backgroundColor: NEON_COLOR,
+                    backgroundColor: PRIMARY_COLOR,
                     opacity: loading ? 0.5 : glowOpacity,
                   }
                 ]}
@@ -346,13 +353,13 @@ export default function PosterScreen({ navigation }) {
               <View style={styles.processButtonContent}>
                 {loading ? (
                   <>
-                    <ActivityIndicator color={NEON_COLOR} size="small" />
-                    <Text style={[styles.processButtonText, { color: NEON_COLOR }]}>
+                    <ActivityIndicator color={PRIMARY_COLOR} size="small" />
+                    <Text style={[styles.processButtonText, { color: PRIMARY_COLOR }]}>
                       PROCESSING...
                     </Text>
                   </>
                 ) : (
-                  <Text style={[styles.processButtonText, { color: NEON_COLOR }]}>
+                  <Text style={[styles.processButtonText, { color: PRIMARY_COLOR }]}>
                     ▸ EXECUTE TRANSFORM
                   </Text>
                 )}
@@ -368,7 +375,7 @@ export default function PosterScreen({ navigation }) {
                   style={[
                     styles.resultIndicator,
                     {
-                      backgroundColor: NEON_COLOR,
+                      backgroundColor: PRIMARY_COLOR,
                       opacity: glowOpacity,
                     }
                   ]}
@@ -385,10 +392,10 @@ export default function PosterScreen({ navigation }) {
 
               <View style={styles.resultActions}>
                 <TouchableOpacity
-                  style={[styles.actionButton, { borderColor: NEON_COLOR }]}
+                  style={[styles.actionButton, { borderColor: PRIMARY_COLOR }]}
                   onPress={saveImage}
                 >
-                  <Text style={[styles.actionButtonText, { color: NEON_COLOR }]}>
+                  <Text style={[styles.actionButtonText, { color: PRIMARY_COLOR }]}>
                     ↓ SAVE
                   </Text>
                 </TouchableOpacity>
@@ -410,7 +417,7 @@ export default function PosterScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1C1C1C',
+    backgroundColor: '#F8F8F8',
   },
   header: {
     flexDirection: 'row',
@@ -418,16 +425,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 20,
-    backgroundColor: '#1C1C1C',
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#3D3D3D',
+    borderBottomColor: '#E0E0E0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   backButtonContainer: {
     marginRight: 16,
   },
   backButton: {
     fontSize: 28,
-    color: '#E8E8E8',
+    color: '#333333',
     fontWeight: '300',
   },
   headerContent: {
@@ -437,14 +449,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   title: {
-    fontFamily: 'monospace',
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#E8E8E8',
-    letterSpacing: 2,
+    color: '#333333',
+    letterSpacing: 0.5,
   },
   statusDot: {
     width: 8,
@@ -453,14 +464,13 @@ const styles = StyleSheet.create({
   },
   headerDivider: {
     height: 1,
-    backgroundColor: '#3D3D3D',
-    marginBottom: 8,
+    backgroundColor: '#E0E0E0',
+    marginBottom: 6,
   },
   subtitle: {
-    fontFamily: 'monospace',
-    fontSize: 10,
-    color: '#666666',
-    letterSpacing: 1,
+    fontSize: 12,
+    color: '#999999',
+    letterSpacing: 0.3,
   },
   scrollView: {
     flex: 1,
@@ -469,42 +479,30 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   uploadFrame: {
-    backgroundColor: '#2A2A2A',
-    borderWidth: 1,
-    borderColor: '#3D3D3D',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     padding: 40,
-    position: 'relative',
-    marginBottom: 24,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   cornerBracket: {
-    position: 'absolute',
-    width: 16,
-    height: 16,
-    borderColor: '#555555',
+    display: 'none',
   },
   cornerTopLeft: {
-    top: -1,
-    left: -1,
-    borderTopWidth: 2,
-    borderLeftWidth: 2,
+    display: 'none',
   },
   cornerTopRight: {
-    top: -1,
-    right: -1,
-    borderTopWidth: 2,
-    borderRightWidth: 2,
+    display: 'none',
   },
   cornerBottomLeft: {
-    bottom: -1,
-    left: -1,
-    borderBottomWidth: 2,
-    borderLeftWidth: 2,
+    display: 'none',
   },
   cornerBottomRight: {
-    bottom: -1,
-    right: -1,
-    borderBottomWidth: 2,
-    borderRightWidth: 2,
+    display: 'none',
   },
   uploadContent: {
     alignItems: 'center',
@@ -514,24 +512,21 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   uploadTitle: {
-    fontFamily: 'monospace',
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#E8E8E8',
-    letterSpacing: 2,
-    marginBottom: 12,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333333',
+    marginBottom: 8,
   },
   dividerShort: {
     width: 60,
-    height: 2,
+    height: 3,
     marginBottom: 12,
+    borderRadius: 2,
   },
   uploadSubtext: {
-    fontFamily: 'monospace',
-    fontSize: 10,
-    color: '#888888',
+    fontSize: 13,
+    color: '#999999',
     marginBottom: 24,
-    letterSpacing: 1,
   },
   uploadButtons: {
     flexDirection: 'row',
@@ -540,16 +535,20 @@ const styles = StyleSheet.create({
   },
   uploadButton: {
     flex: 1,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
     borderWidth: 2,
-    backgroundColor: '#2A2A2A',
     paddingVertical: 14,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   uploadButtonText: {
-    fontFamily: 'monospace',
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: 1.5,
+    fontSize: 14,
+    fontWeight: '600',
   },
   imageSection: {
     marginBottom: 24,
@@ -561,68 +560,74 @@ const styles = StyleSheet.create({
   },
   sectionIndicator: {
     width: 4,
-    height: 12,
-    marginRight: 8,
+    height: 14,
+    marginRight: 10,
+    borderRadius: 2,
   },
   sectionTitle: {
-    fontFamily: 'monospace',
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#E8E8E8',
-    letterSpacing: 1.5,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333333',
     flex: 1,
   },
   imageFrame: {
     position: 'relative',
-    borderWidth: 1,
-    borderColor: '#3D3D3D',
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#F0F0F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   image: {
     width: '100%',
     height: 280,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: '#F0F0F0',
   },
   imageOverlay: {
     position: 'absolute',
-    top: 8,
-    left: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    top: 12,
+    left: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingVertical: 6,
+    borderRadius: 6,
   },
   imageLabel: {
-    fontFamily: 'monospace',
-    fontSize: 10,
-    color: '#E8E8E8',
-    letterSpacing: 1,
+    fontSize: 11,
+    color: '#FFFFFF',
+    fontWeight: '500',
   },
   changeButton: {
-    marginTop: 8,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: '#3D3D3D',
+    marginTop: 12,
+    paddingVertical: 12,
+    borderRadius: 8,
     alignItems: 'center',
-    backgroundColor: '#2A2A2A',
+    backgroundColor: '#F5F5F5',
   },
   changeButtonText: {
-    fontFamily: 'monospace',
-    fontSize: 11,
-    color: '#888888',
-    letterSpacing: 1,
+    fontSize: 13,
+    color: '#666666',
+    fontWeight: '500',
   },
   referenceSection: {
     marginBottom: 24,
   },
+  referenceButtons: {
+    flexDirection: 'row',
+  },
   addButton: {
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    borderWidth: 1.5,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    backgroundColor: '#FFFFFF',
   },
   addButtonText: {
-    fontFamily: 'monospace',
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1,
+    fontSize: 11,
+    fontWeight: '600',
   },
   referenceGrid: {
     flexDirection: 'row',
@@ -633,13 +638,14 @@ const styles = StyleSheet.create({
     width: '31%',
     aspectRatio: 1,
     position: 'relative',
-    borderWidth: 1,
-    borderColor: '#3D3D3D',
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#F0F0F0',
   },
   referenceImage: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#2A2A2A',
+    backgroundColor: '#F0F0F0',
   },
   referenceLabel: {
     position: 'absolute',
@@ -675,19 +681,18 @@ const styles = StyleSheet.create({
   emptyReference: {
     paddingVertical: 32,
     paddingHorizontal: 20,
-    backgroundColor: '#2A2A2A',
-    borderWidth: 1,
-    borderColor: '#3D3D3D',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
     borderStyle: 'dashed',
     alignItems: 'center',
   },
   emptyReferenceText: {
-    fontFamily: 'monospace',
-    fontSize: 10,
-    color: '#666666',
+    fontSize: 12,
+    color: '#999999',
     textAlign: 'center',
-    lineHeight: 16,
-    letterSpacing: 0.5,
+    lineHeight: 18,
   },
   styleSection: {
     marginBottom: 24,
@@ -700,48 +705,44 @@ const styles = StyleSheet.create({
   styleButton: {
     width: '31%',
     paddingVertical: 16,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#3D3D3D',
+    borderColor: '#E0E0E0',
     alignItems: 'center',
-    position: 'relative',
-    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   styleCode: {
-    fontFamily: 'monospace',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
-    color: '#555555',
+    color: '#999999',
     marginBottom: 4,
   },
   styleLabel: {
-    fontFamily: 'monospace',
-    fontSize: 9,
-    color: '#888888',
-    letterSpacing: 1,
+    fontSize: 10,
+    color: '#999999',
+    fontWeight: '500',
   },
   styleGlow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    opacity: 0.1,
+    display: 'none',
   },
   processButton: {
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
     borderWidth: 2,
-    backgroundColor: '#2A2A2A',
     marginBottom: 24,
-    position: 'relative',
-    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   buttonGlow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    opacity: 0.1,
+    display: 'none',
   },
   processButtonContent: {
     flexDirection: 'row',
@@ -751,10 +752,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   processButtonText: {
-    fontFamily: 'monospace',
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: 2,
+    fontSize: 15,
+    fontWeight: '600',
   },
   resultSection: {
     marginBottom: 24,
@@ -765,17 +764,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   resultIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 10,
   },
   resultTitle: {
-    fontFamily: 'monospace',
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#E8E8E8',
-    letterSpacing: 1.5,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333333',
   },
   resultActions: {
     flexDirection: 'row',
@@ -785,16 +782,20 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
     borderWidth: 2,
-    borderColor: '#3D3D3D',
-    backgroundColor: '#2A2A2A',
+    borderRadius: 12,
+    borderColor: '#E0E0E0',
+    backgroundColor: '#FFFFFF',
     paddingVertical: 14,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   actionButtonText: {
-    fontFamily: 'monospace',
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#888888',
-    letterSpacing: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#666666',
   },
 });

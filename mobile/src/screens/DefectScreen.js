@@ -9,15 +9,7 @@ export default function DefectScreen({ navigation }) {
   const [processedImage, setProcessedImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [description, setDescription] = useState('');
-  const glowAnim = useRef(new Animated.Value(0)).current;
-  const NEON_COLOR = '#FF6B35';
-
-  React.useEffect(() => {
-    Animated.loop(Animated.sequence([
-      Animated.timing(glowAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
-      Animated.timing(glowAnim, { toValue: 0, duration: 2000, useNativeDriver: true }),
-    ])).start();
-  }, []);
+  const PRIMARY_COLOR = '#E74C3C'; // Soft Red/Orange for Defect module
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -27,7 +19,23 @@ export default function DefectScreen({ navigation }) {
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
+      allowsEditing: false,  // 크롭 없이 원본 그대로 사용
+      quality: 1,
+    });
+    if (!result.canceled) {
+      setSelectedImage(result.assets[0].uri);
+      setProcessedImage(null);
+    }
+  };
+
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Camera access permission is required.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: false,
       quality: 1,
     });
     if (!result.canceled) {
@@ -72,8 +80,6 @@ export default function DefectScreen({ navigation }) {
     }
   };
 
-  const glowOpacity = glowAnim.interpolate({ inputRange: [0, 1], outputRange: [0.3, 0.8] });
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -81,12 +87,8 @@ export default function DefectScreen({ navigation }) {
           <Text style={styles.backButton}>←</Text>
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <View style={styles.headerTop}>
-            <Text style={styles.title}>DEFECT HIGHLIGHT</Text>
-            <Animated.View style={[styles.statusDot, { backgroundColor: NEON_COLOR, opacity: glowOpacity }]} />
-          </View>
-          <View style={styles.headerDivider} />
-          <Text style={styles.subtitle}>MODULE//03 // EXPOSE</Text>
+          <Text style={styles.title}>Defect Highlight</Text>
+          <Text style={styles.subtitle}>Automatically detect and highlight product defects</Text>
         </View>
       </View>
 
@@ -94,38 +96,32 @@ export default function DefectScreen({ navigation }) {
         <View style={styles.content}>
           {!selectedImage && (
             <View style={styles.uploadFrame}>
-              <View style={[styles.cornerBracket, styles.cornerTopLeft]} />
-              <View style={[styles.cornerBracket, styles.cornerTopRight]} />
               <View style={styles.uploadContent}>
-                <Text style={[styles.uploadIcon, { color: NEON_COLOR }]}>▸</Text>
-                <Text style={styles.uploadTitle}>INPUT REQUIRED</Text>
-                <View style={[styles.dividerShort, { backgroundColor: NEON_COLOR }]} />
-                <Text style={styles.uploadSubtext}>JPG, PNG // MAX 10MB</Text>
+                <Text style={[styles.uploadIcon, { color: PRIMARY_COLOR }]}>⚠️</Text>
+                <Text style={styles.uploadTitle}>Select Your Photo</Text>
+                <Text style={styles.uploadSubtext}>AI will automatically detect scratches, dents, and defects</Text>
                 <View style={styles.uploadButtons}>
-                  <TouchableOpacity style={[styles.uploadButton, { borderColor: NEON_COLOR }]} onPress={pickImage}>
-                    <Text style={[styles.uploadButtonText, { color: NEON_COLOR }]}>GALLERY</Text>
+                  <TouchableOpacity style={[styles.uploadButton, { backgroundColor: PRIMARY_COLOR }]} onPress={pickImage}>
+                    <Text style={styles.uploadButtonText}>📁 Gallery</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.uploadButton, { backgroundColor: PRIMARY_COLOR }]} onPress={takePhoto}>
+                    <Text style={styles.uploadButtonText}>📷 Camera</Text>
                   </TouchableOpacity>
                 </View>
               </View>
-              <View style={[styles.cornerBracket, styles.cornerBottomLeft]} />
-              <View style={[styles.cornerBracket, styles.cornerBottomRight]} />
             </View>
           )}
 
           {selectedImage && (
             <View style={styles.imageSection}>
               <View style={styles.sectionHeader}>
-                <View style={[styles.sectionIndicator, { backgroundColor: NEON_COLOR }]} />
-                <Text style={styles.sectionTitle}>SOURCE IMAGE</Text>
+                <Text style={styles.sectionTitle}>Original Image</Text>
               </View>
               <View style={styles.imageFrame}>
                 <Image source={{ uri: selectedImage }} style={styles.image} />
-                <View style={styles.imageOverlay}>
-                  <Text style={styles.imageLabel}>INPUT</Text>
-                </View>
               </View>
               <TouchableOpacity style={styles.changeButton} onPress={pickImage}>
-                <Text style={styles.changeButtonText}>↻ CHANGE</Text>
+                <Text style={styles.changeButtonText}>Change Image</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -133,13 +129,12 @@ export default function DefectScreen({ navigation }) {
           {selectedImage && (
             <View style={styles.descriptionSection}>
               <View style={styles.sectionHeader}>
-                <View style={[styles.sectionIndicator, { backgroundColor: NEON_COLOR }]} />
-                <Text style={styles.sectionTitle}>DEFECT DESCRIPTION (OPTIONAL)</Text>
+                <Text style={styles.sectionTitle}>Defect Description (Optional)</Text>
               </View>
               <TextInput
                 style={styles.textInput}
-                placeholder="DESCRIBE DEFECTS..."
-                placeholderTextColor="#555555"
+                placeholder="Describe the defects you want to highlight..."
+                placeholderTextColor="#AAAAAA"
                 value={description}
                 onChangeText={setDescription}
                 multiline
@@ -149,16 +144,15 @@ export default function DefectScreen({ navigation }) {
           )}
 
           {selectedImage && (
-            <TouchableOpacity style={[styles.processButton, { borderColor: NEON_COLOR }]} onPress={processImage} disabled={loading}>
-              <Animated.View style={[styles.buttonGlow, { backgroundColor: NEON_COLOR, opacity: loading ? 0.5 : glowOpacity }]} />
+            <TouchableOpacity style={[styles.processButton, { backgroundColor: loading ? '#CCC' : PRIMARY_COLOR }]} onPress={processImage} disabled={loading}>
               <View style={styles.processButtonContent}>
                 {loading ? (
                   <>
-                    <ActivityIndicator color={NEON_COLOR} size="small" />
-                    <Text style={[styles.processButtonText, { color: NEON_COLOR }]}>PROCESSING...</Text>
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                    <Text style={styles.processButtonText}>Processing...</Text>
                   </>
                 ) : (
-                  <Text style={[styles.processButtonText, { color: NEON_COLOR }]}>▸ EXECUTE HIGHLIGHT</Text>
+                  <Text style={styles.processButtonText}>🔍 Detect Defects</Text>
                 )}
               </View>
             </TouchableOpacity>
@@ -167,21 +161,17 @@ export default function DefectScreen({ navigation }) {
           {processedImage && (
             <View style={styles.resultSection}>
               <View style={styles.resultHeader}>
-                <Animated.View style={[styles.resultIndicator, { backgroundColor: NEON_COLOR, opacity: glowOpacity }]} />
-                <Text style={styles.resultTitle}>OUTPUT // COMPLETE</Text>
+                <Text style={styles.resultTitle}>✅ Defects Highlighted</Text>
               </View>
               <View style={styles.imageFrame}>
                 <Image source={{ uri: processedImage }} style={styles.image} />
-                <View style={styles.imageOverlay}>
-                  <Text style={styles.imageLabel}>OUTPUT</Text>
-                </View>
               </View>
               <View style={styles.resultActions}>
-                <TouchableOpacity style={[styles.actionButton, { borderColor: NEON_COLOR }]} onPress={saveImage}>
-                  <Text style={[styles.actionButtonText, { color: NEON_COLOR }]}>↓ SAVE</Text>
+                <TouchableOpacity style={[styles.actionButton, { backgroundColor: PRIMARY_COLOR }]} onPress={saveImage}>
+                  <Text style={styles.actionButtonText}>💾 Save to Gallery</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.actionButton} onPress={() => setProcessedImage(null)}>
-                  <Text style={styles.actionButtonText}>↻ RETRY</Text>
+                <TouchableOpacity style={[styles.actionButton, { backgroundColor: '#95A5A6' }]} onPress={() => setProcessedImage(null)}>
+                  <Text style={styles.actionButtonText}>🔄 Try Again</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -193,53 +183,121 @@ export default function DefectScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1C1C1C' },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20, backgroundColor: '#1C1C1C', borderBottomWidth: 1, borderBottomColor: '#3D3D3D' },
+  container: { flex: 1, backgroundColor: '#F8F8F8' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 20,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
   backButtonContainer: { marginRight: 16 },
-  backButton: { fontSize: 28, color: '#E8E8E8', fontWeight: '300' },
+  backButton: { fontSize: 28, color: '#333333', fontWeight: '300' },
   headerContent: { flex: 1 },
-  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  title: { fontFamily: 'monospace', fontSize: 20, fontWeight: '700', color: '#E8E8E8', letterSpacing: 2 },
-  statusDot: { width: 8, height: 8, borderRadius: 4 },
-  headerDivider: { height: 1, backgroundColor: '#3D3D3D', marginBottom: 8 },
-  subtitle: { fontFamily: 'monospace', fontSize: 10, color: '#666666', letterSpacing: 1 },
+  title: { fontSize: 24, fontWeight: '700', color: '#333333', marginBottom: 4 },
+  subtitle: { fontSize: 14, color: '#666666' },
   scrollView: { flex: 1 },
   content: { padding: 20 },
-  uploadFrame: { backgroundColor: '#2A2A2A', borderWidth: 1, borderColor: '#3D3D3D', padding: 40, position: 'relative', marginBottom: 24 },
-  cornerBracket: { position: 'absolute', width: 16, height: 16, borderColor: '#555555' },
-  cornerTopLeft: { top: -1, left: -1, borderTopWidth: 2, borderLeftWidth: 2 },
-  cornerTopRight: { top: -1, right: -1, borderTopWidth: 2, borderRightWidth: 2 },
-  cornerBottomLeft: { bottom: -1, left: -1, borderBottomWidth: 2, borderLeftWidth: 2 },
-  cornerBottomRight: { bottom: -1, right: -1, borderBottomWidth: 2, borderRightWidth: 2 },
+  uploadFrame: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 40,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
   uploadContent: { alignItems: 'center' },
   uploadIcon: { fontSize: 48, marginBottom: 16 },
-  uploadTitle: { fontFamily: 'monospace', fontSize: 16, fontWeight: '700', color: '#E8E8E8', letterSpacing: 2, marginBottom: 12 },
-  dividerShort: { width: 60, height: 2, marginBottom: 12 },
-  uploadSubtext: { fontFamily: 'monospace', fontSize: 10, color: '#888888', marginBottom: 24, letterSpacing: 1 },
+  uploadTitle: { fontSize: 20, fontWeight: '700', color: '#333333', marginBottom: 12 },
+  uploadSubtext: { fontSize: 14, color: '#666666', marginBottom: 24, textAlign: 'center', lineHeight: 20 },
   uploadButtons: { flexDirection: 'row', gap: 12, width: '100%' },
-  uploadButton: { flex: 1, borderWidth: 2, backgroundColor: '#2A2A2A', paddingVertical: 14, alignItems: 'center' },
-  uploadButtonText: { fontFamily: 'monospace', fontSize: 13, fontWeight: '700', letterSpacing: 1.5 },
+  uploadButton: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  uploadButtonText: { fontSize: 14, fontWeight: '600', color: '#FFFFFF' },
   imageSection: { marginBottom: 24 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  sectionIndicator: { width: 4, height: 12, marginRight: 8 },
-  sectionTitle: { fontFamily: 'monospace', fontSize: 12, fontWeight: '700', color: '#E8E8E8', letterSpacing: 1.5, flex: 1 },
-  imageFrame: { position: 'relative', borderWidth: 1, borderColor: '#3D3D3D' },
-  image: { width: '100%', height: 280, backgroundColor: '#2A2A2A' },
-  imageOverlay: { position: 'absolute', top: 8, left: 8, backgroundColor: 'rgba(0, 0, 0, 0.7)', paddingHorizontal: 12, paddingVertical: 4 },
-  imageLabel: { fontFamily: 'monospace', fontSize: 10, color: '#E8E8E8', letterSpacing: 1 },
-  changeButton: { marginTop: 8, paddingVertical: 10, borderWidth: 1, borderColor: '#3D3D3D', alignItems: 'center', backgroundColor: '#2A2A2A' },
-  changeButtonText: { fontFamily: 'monospace', fontSize: 11, color: '#888888', letterSpacing: 1 },
+  sectionHeader: { marginBottom: 12 },
+  sectionTitle: { fontSize: 16, fontWeight: '600', color: '#333333' },
+  imageFrame: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  image: { width: '100%', height: 280 },
+  changeButton: {
+    marginTop: 8,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    backgroundColor: '#F0F0F0',
+  },
+  changeButtonText: { fontSize: 14, color: '#666666', fontWeight: '500' },
   descriptionSection: { marginBottom: 24 },
-  textInput: { backgroundColor: '#2A2A2A', borderWidth: 1, borderColor: '#3D3D3D', padding: 16, fontFamily: 'monospace', fontSize: 12, color: '#E8E8E8', textAlignVertical: 'top', minHeight: 80 },
-  processButton: { borderWidth: 2, backgroundColor: '#2A2A2A', marginBottom: 24, position: 'relative', overflow: 'hidden' },
-  buttonGlow: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.1 },
+  textInput: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 14,
+    color: '#333333',
+    textAlignVertical: 'top',
+    minHeight: 80,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  processButton: {
+    borderRadius: 12,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
   processButtonContent: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 18, gap: 12 },
-  processButtonText: { fontFamily: 'monospace', fontSize: 14, fontWeight: '700', letterSpacing: 2 },
+  processButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
   resultSection: { marginBottom: 24 },
-  resultHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  resultIndicator: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
-  resultTitle: { fontFamily: 'monospace', fontSize: 12, fontWeight: '700', color: '#E8E8E8', letterSpacing: 1.5 },
+  resultHeader: { marginBottom: 12 },
+  resultTitle: { fontSize: 18, fontWeight: '700', color: '#333333' },
   resultActions: { flexDirection: 'row', gap: 12, marginTop: 12 },
-  actionButton: { flex: 1, borderWidth: 2, borderColor: '#3D3D3D', backgroundColor: '#2A2A2A', paddingVertical: 14, alignItems: 'center' },
-  actionButtonText: { fontFamily: 'monospace', fontSize: 12, fontWeight: '700', color: '#888888', letterSpacing: 1 },
+  actionButton: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  actionButtonText: { fontSize: 14, fontWeight: '600', color: '#FFFFFF' },
 });

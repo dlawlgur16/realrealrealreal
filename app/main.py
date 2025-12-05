@@ -26,10 +26,11 @@ from app.prompts import (
     SERIAL_ENHANCEMENT_PROMPT,
     DEFECT_HIGHLIGHT_PROMPT,
     MINIMAL_STYLE_PROMPT,
-    VINTAGE_STYLE_PROMPT,
-    CATALOGUE_STYLE_PROMPT,
     TONE_ON_TONE_STYLE_PROMPT,
-    DREAM_STYLE_PROMPT
+    MODERN_LUXURY_STYLE_PROMPT,
+    ARTISTIC_STYLE_PROMPT,
+    HERO_STYLE_PROMPT,
+    EXHIBITION_STYLE_PROMPT
 )
 from app.utils import encode_image_to_base64, extract_image_from_response
 import base64
@@ -319,13 +320,16 @@ async def create_poster_thumbnail(
     print(f"[POSTER API] file: {file.filename if file else 'None'}", flush=True)
     print("="*60 + "\n", flush=True)
 
-    # 스타일별 전용 프롬프트 매핑
+    # 스타일별 전용 프롬프트 매핑 (6가지 스타일)
     style_prompts = {
         "minimal": MINIMAL_STYLE_PROMPT,
-        "vintage": VINTAGE_STYLE_PROMPT,
-        "catalogue": CATALOGUE_STYLE_PROMPT,
-        "tone-on-tone": TONE_ON_TONE_STYLE_PROMPT,
-        "dream": DREAM_STYLE_PROMPT
+        "tone_on_tone": TONE_ON_TONE_STYLE_PROMPT,
+        "tone-on-tone": TONE_ON_TONE_STYLE_PROMPT,  # 하이픈 버전도 지원
+        "modern_luxury": MODERN_LUXURY_STYLE_PROMPT,
+        "modern-luxury": MODERN_LUXURY_STYLE_PROMPT,  # 하이픈 버전도 지원
+        "artistic": ARTISTIC_STYLE_PROMPT,
+        "hero": HERO_STYLE_PROMPT,
+        "exhibition": EXHIBITION_STYLE_PROMPT
     }
 
     # 선택된 스타일의 프롬프트 사용 (기본값: minimal)
