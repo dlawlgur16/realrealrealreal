@@ -19,7 +19,18 @@ from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from app.config import client
 from app.models import ProcessResult
-from app.prompts import get_prompt_by_type, add_reference_image_instructions, POSTER_THUMBNAIL_PROMPT, SERIAL_ENHANCEMENT_PROMPT, DEFECT_HIGHLIGHT_PROMPT
+from app.prompts import (
+    get_prompt_by_type,
+    add_reference_image_instructions,
+    POSTER_THUMBNAIL_PROMPT,
+    SERIAL_ENHANCEMENT_PROMPT,
+    DEFECT_HIGHLIGHT_PROMPT,
+    MINIMAL_STYLE_PROMPT,
+    VINTAGE_STYLE_PROMPT,
+    CATALOGUE_STYLE_PROMPT,
+    TONE_ON_TONE_STYLE_PROMPT,
+    DREAM_STYLE_PROMPT
+)
 from app.utils import encode_image_to_base64, extract_image_from_response
 import base64
 from app.gemini_client import call_gemini_api
@@ -298,8 +309,8 @@ async def create_poster_thumbnail(
     """
     포스터형 썸네일 생성 (전용 엔드포인트)
 
-    - style: "minimal" | "vintage" | "modern" | "warm"
-    - background_color: 배경 색상 (hex)
+    - style: "minimal" | "vintage" | "catalogue" | "tone-on-tone" | "dream"
+    - background_color: 배경 색상 (hex) - 현재 미사용
     """
     print("\n" + "="*60, flush=True)
     print("[POSTER API] 요청 받음!", flush=True)
@@ -307,21 +318,99 @@ async def create_poster_thumbnail(
     print(f"[POSTER API] background_color: {background_color}", flush=True)
     print(f"[POSTER API] file: {file.filename if file else 'None'}", flush=True)
     print("="*60 + "\n", flush=True)
+
+    # 스타일별 전용 프롬프트 매핑
     style_prompts = {
-        "minimal": "Minimalist, clean, museum-display quality",
-        "vintage": "Warm vintage aesthetic with nostalgic lighting",
-        "modern": "Contemporary, sleek, high-tech feel",
-        "warm": "Cozy, inviting atmosphere with warm tones"
+        "minimal": MINIMAL_STYLE_PROMPT,
+        "vintage": VINTAGE_STYLE_PROMPT,
+        "catalogue": CATALOGUE_STYLE_PROMPT,
+        "tone-on-tone": TONE_ON_TONE_STYLE_PROMPT,
+        "dream": DREAM_STYLE_PROMPT
     }
-    
-    additional = f"Style: {style_prompts.get(style, style_prompts['minimal'])}. Background color preference: {background_color}"
-    
-    return await process_image(
-        request=request,
-        file=file,
-        process_type="poster",
-        additional_instructions=additional
-    )
+
+    # 선택된 스타일의 프롬프트 사용 (기본값: minimal)
+    selected_prompt = style_prompts.get(style, MINIMAL_STYLE_PROMPT)
+
+    print(f"[POSTER API] 사용할 프롬프트: {style} 스타일", flush=True)
+
+    # Request에서 레퍼런스 파일만 파싱
+    form = await request.form() if request else None
+
+    # 파일 유효성 검사
+    if not hasattr(file, 'content_type') or not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="이미지 파일만 업로드 가능합니다.")
+
+    # 메인 이미지 읽기
+    print("[POSTER API] 메인 이미지 파일 읽는 중...", flush=True)
+    image_bytes = await file.read()
+    print(f"[POSTER API] 원본 이미지 크기: {len(image_bytes)} bytes", flush=True)
+    image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+    print(f"[POSTER API] base64 인코딩 완료: {len(image_base64)} chars", flush=True)
+
+    # 레퍼런스 이미지 읽기
+    reference_images_base64 = []
+    try:
+        if form:
+            reference_files_list = form.getlist("reference_files")
+        else:
+            reference_files_list = []
+        print(f"[POSTER API] 레퍼런스 이미지: {len(reference_files_list) if reference_files_list else 0}개", flush=True)
+        if reference_files_list:
+            for i, ref_file in enumerate(reference_files_list):
+                is_upload_file = isinstance(ref_file, (UploadFile, StarletteUploadFile))
+                has_read = hasattr(ref_file, 'read')
+                has_content_type = hasattr(ref_file, 'content_type')
+
+                if has_read and has_content_type:
+                    content_type = ref_file.content_type
+                    if content_type and content_type.startswith("image/"):
+                        ref_bytes = await ref_file.read()
+                        ref_base64 = encode_image_to_base64(ref_bytes, optimize=True, max_size=1500)
+                        reference_images_base64.append(ref_base64)
+                        print(f"[POSTER API] ✅ 레퍼런스 이미지 {i+1} 처리 완료", flush=True)
+    except Exception as e:
+        print(f"[POSTER API] 레퍼런스 이미지 파싱 중 오류 (무시하고 계속): {e}", flush=True)
+
+    # 레퍼런스 이미지 지시사항 추가
+    prompt = add_reference_image_instructions(selected_prompt, len(reference_images_base64))
+
+    try:
+        # Gemini API 호출
+        response = await call_gemini_api(
+            image_base64=image_base64,
+            prompt=prompt,
+            mime_type=file.content_type,
+            reference_images=reference_images_base64 if reference_images_base64 else None
+        )
+
+        # 결과 이미지 추출
+        result_image = extract_image_from_response(response)
+
+        if result_image:
+            return ProcessResult(
+                success=True,
+                image_base64=result_image,
+                message=f"{style} 스타일로 포스터 생성이 완료되었습니다.",
+                process_type="poster",
+                processing_time_ms=0
+            )
+        else:
+            return ProcessResult(
+                success=False,
+                image_base64=None,
+                message="이미지 생성에 실패했습니다.",
+                process_type="poster",
+                processing_time_ms=0
+            )
+    except Exception as e:
+        print(f"[POSTER API] 처리 중 오류: {e}", flush=True)
+        return ProcessResult(
+            success=False,
+            image_base64=None,
+            message=f"처리 중 오류 발생: {str(e)}",
+            process_type="poster",
+            processing_time_ms=0
+        )
 
 
 @app.post("/api/serial")

@@ -1,6 +1,7 @@
 """프롬프트 템플릿"""
 
-POSTER_THUMBNAIL_PROMPT = """Transform the provided product image into a dramatic, poster-style product photograph with bold visual impact.
+# 미니멀 스타일 (기존 POSTER_THUMBNAIL_PROMPT)
+MINIMAL_STYLE_PROMPT = """Transform the provided product image into a dramatic, poster-style product photograph with bold visual impact.
 
 **ABSOLUTELY CRITICAL - PRODUCT PRESERVATION:**
 - The product itself MUST remain EXACTLY as shown in the provided image. Do NOT change, modify, alter, or recreate ANY part of the product.
@@ -37,6 +38,171 @@ Maintain product authenticity - don't over-process the product itself, only enha
 Resolution: CRITICAL - You MUST generate the image at the HIGHEST POSSIBLE RESOLUTION. The output image MUST be at least 2048x2048 pixels, and preferably 3072x3072 or 4096x4096 pixels. DO NOT generate at 1024x1024 or any lower resolution. The image MUST match or exceed the input image's resolution. Maximum quality, zero compression.
 Aspect Ratio: Square (1:1 ratio) for universal display, optimized for poster-style presentation.
 Image Quality: Output at 100% quality with absolutely no compression or downscaling. Preserve every pixel detail at maximum resolution."""
+
+# 빈티지 스타일
+VINTAGE_STYLE_PROMPT = """Transform the provided product image into a warm, vintage-inspired minimal aesthetic photograph.
+
+**ABSOLUTELY CRITICAL — PRODUCT PRESERVATION**
+- The product must remain exactly as shown: do not modify its form, finish, wear, or material.
+- Only environment, light, and mood can change — the product itself must stay untouched.
+
+[Vintage Minimal Aesthetic]
+Visual Feel: Quiet, nostalgic, understated design photography — reminiscent of vintage interiors or editorial film stills.
+Lighting: Use natural sunlight with a warm tone, as if late-afternoon sun is entering through a window.
+- Long, soft shadows cast across the floor or wall.
+- Gentle directional highlights, not harsh studio lighting.
+
+Background:
+- A spacious, simple environment — empty wall or matte surface.
+- Neutral warm tones such as beige, sand, or faded ivory.
+- Avoid busy backgrounds; keep it uncluttered and minimal.
+
+Texture & Tone:
+- Slightly muted color palette with soft contrast.
+- Subtle film-like warmth and organic imperfection.
+- Preserve the product's authentic material character (wood grain, patina, texture, etc.).
+
+[Subject Handling]
+- Keep the product isolated and visually dominant.
+- Compose with significant negative space and simplicity.
+- Use a natural, unposed placement — as if casually sitting in an empty room.
+
+[Mood & Presence]
+- Calm, nostalgic, intimate atmosphere.
+- Quiet elegance, warmth, and timeworn emotional depth.
+- Image should evoke handcrafted quality and understated beauty.
+
+[Exclusions]
+- No text, props, styling items, decorative elements, or studio graphics.
+- Do not retouch or beautify the product beyond lighting mood — show honest character and texture.
+
+[Output Specification]
+- Minimum resolution 2048×2048 (preferably 3072×3072 or 4096×4096).
+- Square 1:1 aspect ratio.
+- Zero compression — full clarity with natural softness in light and tone."""
+
+# 카탈로그 스타일 (모던 대체)
+CATALOGUE_STYLE_PROMPT = """Transform the provided product image into a premium showroom-style catalogue photograph.
+
+**ABSOLUTELY CRITICAL — PRODUCT PRESERVATION**
+- The product must remain EXACTLY as shown in the reference image.
+- Do not modify shape, structure, dimensions, materials, components, or finish.
+- Do not recolor, retouch, or stylize the product itself.
+- Only lighting, clarity, presentation and background style may change.
+
+[Showroom / Catalogue Aesthetic]
+Visual Intent: Produce a clean, high-fidelity commercial product shot suitable for a retail listing or engineering showcase.
+Lighting: Use soft, balanced studio lighting that evenly highlights surfaces, mechanically precise lines, materials and fine details.
+Background: Use a clean white or very light neutral backdrop that isolates the product without visual distractions.
+The background should feel like a photography studio sweep — minimal, bright, and unobtrusive.
+Clarity: Ensure every component and texture is clearly visible, with sharp edges and well-defined outlines.
+
+[Subject Handling]
+- Maintain the product's orientation and proportional accuracy.
+- Make the product razor sharp against a minimal, bright field.
+- Preserve shadows but keep them soft, tight, and controlled, as seen in commercial studio lighting.
+- Avoid dramatic lighting — prioritize clarity, accuracy and presentation.
+
+[Mood and Presence]
+- Convey precision, craftsmanship, quality engineering, and premium design.
+- The image should look like a professional showroom display or a performance product catalog entry.
+
+[Exclusions — Mandatory]
+- No text overlays, branding, props, hands, or additional objects.
+- No filters, stylized colors, vignette effects, or mood overlays.
+- Do not beautify or artistically reinterpret the product — show it truthfully.
+
+[Output Specification]
+- Minimum resolution 2048×2048 (preferably 3072×3072 or 4096×4096).
+- Square 1:1 aspect ratio.
+- 100% clarity, no compression or downscaling, maximum sharpness and detail."""
+
+# 톤온톤 스타일 (따뜻한 대체)
+TONE_ON_TONE_STYLE_PROMPT = """Transform the provided product image into a dramatic, poster-style product photograph with bold visual impact.
+
+**ABSOLUTELY CRITICAL - PRODUCT PRESERVATION:**
+- The product itself MUST remain EXACTLY as shown in the provided reference.
+- Preserve all details: shape, size, proportions, surface, texture, finish, and natural color tone.
+- Do NOT modify, enhance, recolor, or alter the product in any way.
+- Only the environment, lighting, and presentation style may change — the product remains untouched.
+
+[Poster-Style Aesthetic]
+Visual Impact: Create a clean, minimal, high-end poster composition with immediate visual presence.
+Dramatic Lighting: Use soft but directional lighting, creating sculpted highlight edges and subtle shadows to emphasize form.
+Background: Apply a tone-on-tone approach — use a background color derived from the product's primary color but with lower saturation and slightly higher brightness.
+This creates harmonious contrast: the product displays in its natural color, and the background is a soft, desaturated version of it.
+Shadows: Generate gentle but intentional editorial shadows that deepen depth without hiding product details.
+
+[Subject Handling - CRUCIAL]
+Product Preservation: The product must appear exactly as captured — same angle, position, and visual integrity.
+Focus: Keep the product razor-sharp and isolated against the softer background tone.
+Composition: Maintain modern minimalism — generous negative space, balanced alignment, and simplicity while ensuring the product visually dominates.
+Color & Contrast: Maintain the original product color exactly. Increase overall lighting contrast subtly so the product stands out against its lower-saturation background without altering its actual tone.
+
+[Poster-Style Elements]
+Mood: Reflect quiet luxury, calm sophistication, and gallery-grade simplicity.
+Depth: Create dimensionality through tonal separation — natural product color versus muted pastel background.
+Visual Weight: The product should feel intentional, sculptural, and visually significant.
+
+[Exclusions - Mandatory]
+No text overlays, branding, props, external objects, or design elements.
+Do not stylize, retouch, recolor, or modify the product itself — only design the environment and lighting.
+
+[Output Specification]
+Resolution: Minimum 2048×2048 — ideally 3072×3072 or 4096×4096.
+Aspect Ratio: Square 1:1 poster composition.
+Image Quality: 100% quality output with zero downscaling or compression — preserve clarity and detail."""
+
+# Dream 스타일
+DREAM_STYLE_PROMPT = """Transform the provided product image into a whimsical miniature-world art photograph — where tiny figurines interact with the real product as if it were part of their universe.
+
+**ABSOLUTELY CRITICAL — PRODUCT PRESERVATION**
+- Do NOT modify the product itself — its color, proportions, texture, details and realism must remain untouched.
+- The fantasy exists around the product, not inside it.
+
+[Miniature Surrealism Aesthetic]
+Visual Intent:
+- Create a playful, imaginative scene in which small figurines live, work, or play using the real product as architecture, landscape, or props.
+
+Characters:
+- Add miniature people, workers, athletes, animals, or tiny cartoon-like figures engaged in humorous or unexpected activity.
+- Their scale should be much smaller than the real product, emphasizing contrast.
+
+Environment:
+- Construct a believable "micro world" using everyday objects repurposed into structures — tools as buildings, stationery as stadiums, pasta as material, clouds made of cotton, etc.
+- Scene layout should feel handcrafted but polished and editorial.
+
+Lighting:
+- Bright, soft studio lighting with clean shadows.
+- Keep everything crisp and toy-like with slightly cinematic direction.
+
+[Subject Handling]
+- Place the product as the hero center — a bridge, stage, playground, or machinery in the miniature world.
+- The figurines must interact *with* the product but never alter or damage it.
+- The composition should feel like a still frame from a tiny universe.
+
+[Mood & Narrative]
+- Playful, imaginative, charmingly absurd, and delightfully clever.
+- Feels like a premium artistic ad campaign that tells a visual story without text.
+
+[Art Direction]
+- Overhead or studio-style viewpoint to emphasize scale difference.
+- Use pastel, clean, or simple backgrounds to keep focus on interaction.
+- Subtle toy photography realism: shadows, depth of field, and clean color palette.
+
+[Exclusions]
+- No distortion or redesign of the product.
+- No actual brands or text integrations.
+- Figurines must not obscure or overwrite product details — only surround or interact.
+
+[Output Specification]
+- Square resolution 1:1.
+- Minimum 2048×2048 (preferably 4096×4096).
+- Ultra-sharp product and figurines with playful set staging.
+- Clean, editorial, imaginative execution."""
+
+# 기존 호환성을 위한 alias
+POSTER_THUMBNAIL_PROMPT = MINIMAL_STYLE_PROMPT
 
 SERIAL_ENHANCEMENT_PROMPT = """[Instruction]
 You are an expert digital photo editor specializing in privacy protection for product images in secondhand marketplaces. Your task is to automatically detect and remove sensitive information (serial numbers, model names, certification marks, authentication codes, IMEI numbers, etc.) from the product image while preserving the rest of the image perfectly.
