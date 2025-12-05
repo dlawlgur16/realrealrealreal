@@ -186,6 +186,38 @@ Gemini 2.5 Flash Image 모델 (무료 티어 기준):
 2. 나머지 사진은 **실제 제품 사진**으로 신뢰도 확보
 3. 하자가 있다면 **정직하게 표시**하여 분쟁 방지
 
+## 🔧 문제 해결
+
+### macOS에서 Expo 의존성 오류가 발생하는 경우
+
+macOS에서 `npx expo` 실행 시 의존성 패치 오류가 발생할 수 있습니다.
+
+**해결 방법:**
+
+```bash
+# 방법 1: 자동 수정 스크립트 실행
+./fix-expo-mac.sh
+
+# 방법 2: 수동 수정
+cd mobile
+rm -rf node_modules package-lock.json
+npm cache clean --force
+npm install
+npx expo install --fix
+```
+
+**수정 후 실행:**
+```bash
+./start-with-ngrok.sh
+```
+
+### Windows에서는 잘 되는데 macOS에서만 문제가 있는 경우
+
+1. Node.js 버전 확인: `node -v` (v18 이상 권장)
+2. npm 버전 확인: `npm -v` (v9 이상 권장)
+3. Xcode Command Line Tools 설치: `xcode-select --install`
+4. Homebrew로 ngrok 설치: `brew install ngrok/ngrok/ngrok`
+
 ## 📝 라이선스
 
 MIT License

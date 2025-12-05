@@ -190,9 +190,20 @@ echo.
 
 cd mobile
 
-REM node_modules 확인
+REM node_modules 확인 및 expo 의존성 확인
 if not exist node_modules (
     echo ! node_modules가 없습니다. npm install 실행 중...
+    call npm install
+) else (
+    echo ✅ node_modules 발견
+)
+
+REM expo 의존성 확인
+echo.
+echo ✅ expo 의존성 확인 중...
+npm list expo >nul 2>&1
+if errorlevel 1 (
+    echo ! expo 의존성 재설치 중...
     call npm install
 )
 

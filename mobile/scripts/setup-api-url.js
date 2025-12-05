@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const http = require('http');
+const https = require('https');
 
 // 네트워크 인터페이스에서 로컬 IP 주소 찾기
 function getLocalIP() {
@@ -42,19 +43,21 @@ function getLocalIP() {
   return 'localhost';
 }
 
-// URL 연결 테스트
+// URL 연결 테스트 (HTTP와 HTTPS 모두 지원)
 function testConnection(url, timeout = 5000) {
   return new Promise((resolve) => {
     const urlObj = new URL(url);
+    const protocol = urlObj.protocol === 'https:' ? https : http;
     const options = {
       hostname: urlObj.hostname,
-      port: urlObj.port || 80,
+      port: urlObj.port || (urlObj.protocol === 'https:' ? 443 : 80),
       path: '/',
       method: 'GET',
       timeout: timeout,
+      rejectUnauthorized: false, // ngrok 인증서 문제 해결
     };
 
-    const req = http.request(options, (res) => {
+    const req = protocol.request(options, (res) => {
       resolve({ success: true, status: res.statusCode });
     });
 
