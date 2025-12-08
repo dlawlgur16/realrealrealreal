@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -6,317 +6,134 @@ import {
   StyleSheet,
   SafeAreaView,
   StatusBar,
-  Dimensions,
-  Animated,
-  PanResponder,
+  ScrollView,
 } from 'react-native';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25; // 더 민감한 스와이프
+// OceanSeal 색상 팔레트
+const COLORS = {
+  primary: '#007AFF',
+  background: '#F8F9FA',
+  card: '#FFFFFF',
+  textPrimary: '#1D1D1F',
+  textSecondary: '#6B7280',
+  border: '#E5E7EB',
+  poster: '#22C55E',    // 초록 - 포스터
+  privacy: '#8B5CF6',   // 보라 - 개인정보
+  defect: '#F59E0B',    // 주황 - 하자
+};
 
 export default function HomeScreen({ navigation }) {
   const features = [
     {
       id: 'poster',
-      title: 'PRO POSTER',
-      subtitle: '01',
-      description: 'TRANSFORM PRODUCT PHOTOS\nINTO PREMIUM QUALITY',
-      icon: '▸',
-      glowColor: '#00F5FF',
+      icon: '🌟',
+      title: '포스터형 썸네일',
+      subtitle: 'Aesthetic Hook',
+      description: '평범한 중고물품 사진을 스튜디오급 썸네일로 변환합니다',
+      color: COLORS.poster,
       route: 'Poster',
+      tag: '가장 인기',
     },
     {
       id: 'serial',
-      title: 'PRIVACY BLUR',
-      subtitle: '02',
-      description: 'CONCEAL SENSITIVE\nINFORMATION',
-      icon: '▹',
-      glowColor: '#B026FF',
+      icon: '🛡️',
+      title: '개인정보 보호',
+      subtitle: 'Trust Proof',
+      description: '시리얼 넘버, 모델명 등 민감 정보를 자동으로 제거합니다',
+      color: COLORS.privacy,
       route: 'Serial',
+      tag: '안전 거래',
     },
     {
       id: 'defect',
-      title: 'DEFECT SCAN',
-      subtitle: '03',
-      description: 'EXPOSE FLAWS FOR\nTRANSPARENT SELLING',
-      icon: '▸',
-      glowColor: '#FF6B35',
+      icon: '⚠️',
+      title: '하자 강조 표시',
+      subtitle: 'The Honesty',
+      description: '하자 부분을 명확히 표시하여 신뢰도를 높입니다',
+      color: COLORS.defect,
       route: 'Defect',
+      tag: '신뢰 UP',
     },
   ];
 
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const position = useRef(new Animated.Value(0)).current;
-  const [isAnimating, setIsAnimating] = useState(false);
-  const glowAnim = useRef(new Animated.Value(0)).current;
-
-  // Neon glow pulse animation
-  React.useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowAnim, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(glowAnim, {
-          toValue: 0,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, []);
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => !isAnimating,
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        return !isAnimating && Math.abs(gestureState.dx) > 5;
-      },
-      onPanResponderMove: (_, gestureState) => {
-        if (!isAnimating) {
-          position.setValue(gestureState.dx);
-        }
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        if (isAnimating) return;
-
-        const { dx, vx } = gestureState;
-        const velocity = Math.abs(vx);
-        const shouldSwipe = Math.abs(dx) > SWIPE_THRESHOLD || velocity > 0.3;
-
-        if (shouldSwipe) {
-          if (dx < 0 && currentIndex < features.length - 1) {
-            setIsAnimating(true);
-            Animated.spring(position, {
-              toValue: -SCREEN_WIDTH,
-              useNativeDriver: true,
-              tension: 65,
-              friction: 7,
-            }).start(() => {
-              position.setValue(0);
-              setCurrentIndex(currentIndex + 1);
-              setIsAnimating(false);
-            });
-          } else if (dx > 0 && currentIndex > 0) {
-            setIsAnimating(true);
-            Animated.spring(position, {
-              toValue: SCREEN_WIDTH,
-              useNativeDriver: true,
-              tension: 65,
-              friction: 7,
-            }).start(() => {
-              position.setValue(0);
-              setCurrentIndex(currentIndex - 1);
-              setIsAnimating(false);
-            });
-          } else {
-            Animated.spring(position, {
-              toValue: 0,
-              useNativeDriver: true,
-              tension: 65,
-              friction: 7,
-            }).start();
-          }
-        } else {
-          Animated.spring(position, {
-            toValue: 0,
-            useNativeDriver: true,
-            tension: 65,
-            friction: 7,
-          }).start();
-        }
-      },
-    })
-  ).current;
-
-  const handleStart = () => {
-    navigation.navigate(features[currentIndex].route);
+  const handleFeaturePress = (route) => {
+    navigation.navigate(route);
   };
-
-  const handleDotPress = (index) => {
-    if (index !== currentIndex && !isAnimating) {
-      setIsAnimating(true);
-      Animated.spring(position, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 7,
-      }).start(() => {
-        setCurrentIndex(index);
-        setIsAnimating(false);
-      });
-    }
-  };
-
-  const currentFeature = features[currentIndex];
-
-  const glowOpacity = glowAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.3, 0.8],
-  });
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#1C1C1C" />
-
-      {/* Grid Background Pattern */}
-      <View style={styles.gridBackground} />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <Text style={styles.logo}>SNAP//PRO</Text>
-          <View style={styles.statusIndicator}>
-            <Animated.View
-              style={[
-                styles.statusDot,
-                {
-                  backgroundColor: currentFeature.glowColor,
-                  opacity: glowOpacity,
-                }
-              ]}
-            />
-            <Text style={styles.statusText}>READY</Text>
+        <View style={styles.logoContainer}>
+          <Text style={styles.logo}>OceanSeal</Text>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>AI</Text>
           </View>
         </View>
-        <View style={styles.divider} />
-        <Text style={styles.subtitle}>AI-POWERED ENHANCEMENT SYSTEM</Text>
+        <Text style={styles.tagline}>신뢰를 거래하는 기술</Text>
       </View>
 
-      {/* Swipeable Card */}
-      <View style={styles.cardContainer} {...panResponder.panHandlers}>
-        <Animated.View
-          style={[
-            styles.card,
-            {
-              transform: [{ translateX: position }],
-            },
-          ]}
-        >
-          {/* Card Frame */}
-          <View style={styles.cardFrame}>
-            {/* Top Corner Brackets */}
-            <View style={[styles.cornerBracket, styles.cornerTopLeft]} />
-            <View style={[styles.cornerBracket, styles.cornerTopRight]} />
+      {/* Feature Cards */}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.sectionTitle}>기능 선택</Text>
 
-            {/* Feature Number */}
-            <View style={styles.featureNumberContainer}>
-              <Text style={[styles.featureNumber, { color: currentFeature.glowColor }]}>
-                {currentFeature.subtitle}
+        {features.map((feature) => (
+          <TouchableOpacity
+            key={feature.id}
+            style={styles.featureCard}
+            onPress={() => handleFeaturePress(feature.route)}
+            activeOpacity={0.7}
+          >
+            {/* Tag */}
+            <View style={[styles.tag, { backgroundColor: feature.color + '15' }]}>
+              <Text style={[styles.tagText, { color: feature.color }]}>
+                {feature.tag}
               </Text>
             </View>
 
             {/* Content */}
             <View style={styles.cardContent}>
-              <View style={styles.iconContainer}>
-                <Text style={[styles.icon, { color: currentFeature.glowColor }]}>
-                  {currentFeature.icon}
-                </Text>
-                <Animated.View
-                  style={[
-                    styles.iconGlow,
-                    {
-                      backgroundColor: currentFeature.glowColor,
-                      opacity: glowOpacity,
-                    }
-                  ]}
-                />
+              <View style={[styles.iconContainer, { backgroundColor: feature.color + '15' }]}>
+                <Text style={styles.icon}>{feature.icon}</Text>
               </View>
 
-              <Text style={styles.featureTitle}>{currentFeature.title}</Text>
-
-              <View style={styles.descriptionContainer}>
-                <View style={[
-                  styles.accentLine,
-                  { backgroundColor: currentFeature.glowColor },
-                  currentIndex === 0 && styles.accentLineLeft,
-                  currentIndex === 1 && styles.accentLineCenter,
-                  currentIndex === 2 && styles.accentLineRight,
-                ]} />
-                <Text style={styles.featureDescription}>
-                  {currentFeature.description}
-                </Text>
+              <View style={styles.textContainer}>
+                <Text style={styles.featureTitle}>{feature.title}</Text>
+                <Text style={styles.featureSubtitle}>{feature.subtitle}</Text>
+                <Text style={styles.featureDescription}>{feature.description}</Text>
               </View>
             </View>
 
-            {/* Bottom Corner Brackets */}
-            <View style={[styles.cornerBracket, styles.cornerBottomLeft]} />
-            <View style={[styles.cornerBracket, styles.cornerBottomRight]} />
-          </View>
-        </Animated.View>
-
-        {/* Swipe Indicators */}
-        {currentIndex > 0 && (
-          <View style={[styles.swipeIndicator, styles.swipeIndicatorLeft]}>
-            <Text style={styles.swipeText}>←</Text>
-          </View>
-        )}
-        {currentIndex < features.length - 1 && (
-          <View style={[styles.swipeIndicator, styles.swipeIndicatorRight]}>
-            <Text style={styles.swipeText}>→</Text>
-          </View>
-        )}
-      </View>
-
-      {/* Pagination */}
-      <View style={styles.paginationContainer}>
-        <View style={styles.paginationLine} />
-        {features.map((feature, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.dotContainer}
-            onPress={() => handleDotPress(index)}
-            disabled={isAnimating}
-          >
-            <View
-              style={[
-                styles.dot,
-                currentIndex === index && styles.dotActive,
-                currentIndex === index && { backgroundColor: feature.glowColor },
-              ]}
-            />
-            <Text style={[
-              styles.dotLabel,
-              currentIndex === index && { color: feature.glowColor },
-            ]}>
-              {feature.subtitle}
-            </Text>
+            {/* Arrow */}
+            <View style={[styles.arrowContainer, { backgroundColor: feature.color }]}>
+              <Text style={styles.arrow}>→</Text>
+            </View>
           </TouchableOpacity>
         ))}
-        <View style={styles.paginationLine} />
-      </View>
 
-      {/* Start Button */}
-      <TouchableOpacity
-        style={[styles.startButton, { borderColor: currentFeature.glowColor }]}
-        onPress={handleStart}
-        activeOpacity={0.8}
-      >
-        <Animated.View
-          style={[
-            styles.buttonGlow,
-            {
-              backgroundColor: currentFeature.glowColor,
-              opacity: glowOpacity,
-            }
-          ]}
-        />
-        <View style={styles.buttonContent}>
-          <Text style={[styles.startButtonText, { color: currentFeature.glowColor }]}>
-            INITIATE
-          </Text>
-          <Text style={styles.startButtonArrow}>▸</Text>
+        {/* Info Section */}
+        <View style={styles.infoSection}>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoIcon}>💡</Text>
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.infoTitle}>OceanSeal이란?</Text>
+              <Text style={styles.infoDescription}>
+                AI 기술로 중고거래 사진을 '신뢰할 수 있는 인증 정보'로 변환하는 서비스입니다.
+              </Text>
+            </View>
+          </View>
         </View>
-      </TouchableOpacity>
+      </ScrollView>
 
       {/* Footer */}
       <View style={styles.footer}>
-        <View style={styles.footerDivider} />
-        <Text style={styles.footerText}>
-          SWIPE TO SELECT MODULE // TAP TO EXECUTE
-        </Text>
+        <Text style={styles.footerText}>Powered by Gemini AI</Text>
       </View>
     </SafeAreaView>
   );
@@ -325,295 +142,176 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1C1C1C',
-  },
-  gridBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    opacity: 0.03,
-    backgroundColor: 'transparent',
+    backgroundColor: COLORS.background,
   },
   header: {
     paddingHorizontal: 24,
     paddingTop: 16,
-    paddingBottom: 24,
+    paddingBottom: 20,
+    backgroundColor: COLORS.card,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
-  headerTop: {
+  logoContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 4,
   },
   logo: {
-    fontFamily: 'monospace',
-    fontSize: 20,
+    fontSize: 28,
     fontWeight: '700',
-    color: '#E8E8E8',
-    letterSpacing: 2,
+    color: COLORS.primary,
+    letterSpacing: -0.5,
   },
-  statusIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
+  badge: {
+    marginLeft: 8,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
     borderRadius: 4,
   },
-  statusText: {
-    fontFamily: 'monospace',
+  badgeText: {
     fontSize: 10,
-    color: '#888888',
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  tagline: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 100,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    marginBottom: 12,
+    textTransform: 'uppercase',
     letterSpacing: 1,
   },
-  divider: {
-    height: 1,
-    backgroundColor: '#3D3D3D',
-    marginBottom: 12,
-  },
-  subtitle: {
-    fontFamily: 'monospace',
-    fontSize: 11,
-    color: '#666666',
-    letterSpacing: 1.5,
-  },
-  cardContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  card: {
-    width: SCREEN_WIDTH - 40,
-  },
-  cardFrame: {
-    backgroundColor: '#242424',
-    borderWidth: 2,
-    borderColor: '#3D3D3D',
-    padding: 40,
-    position: 'relative',
+  featureCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  cornerBracket: {
+  tag: {
     position: 'absolute',
-    width: 24,
-    height: 24,
-    borderColor: '#666666',
+    top: 12,
+    right: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
-  cornerTopLeft: {
-    top: -2,
-    left: -2,
-    borderTopWidth: 3,
-    borderLeftWidth: 3,
-  },
-  cornerTopRight: {
-    top: -2,
-    right: -2,
-    borderTopWidth: 3,
-    borderRightWidth: 3,
-  },
-  cornerBottomLeft: {
-    bottom: -2,
-    left: -2,
-    borderBottomWidth: 3,
-    borderLeftWidth: 3,
-  },
-  cornerBottomRight: {
-    bottom: -2,
-    right: -2,
-    borderBottomWidth: 3,
-    borderRightWidth: 3,
-  },
-  featureNumberContainer: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-  },
-  featureNumber: {
-    fontFamily: 'monospace',
-    fontSize: 64,
-    fontWeight: '700',
-    opacity: 0.08,
-    letterSpacing: -2,
+  tagText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   cardContent: {
-    alignItems: 'center',
-    paddingVertical: 32,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
   },
   iconContainer: {
-    width: 100,
-    height: 100,
+    width: 56,
+    height: 56,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 32,
-    position: 'relative',
-    borderWidth: 2,
-    borderColor: '#3D3D3D',
-    backgroundColor: '#1C1C1C',
+    marginRight: 16,
   },
   icon: {
-    fontSize: 72,
-    fontWeight: '700',
-    zIndex: 2,
+    fontSize: 28,
   },
-  iconGlow: {
-    position: 'absolute',
-    width: 80,
-    height: 80,
-    borderRadius: 0,
-    zIndex: 1,
+  textContainer: {
+    flex: 1,
+    paddingRight: 40,
   },
   featureTitle: {
-    fontFamily: 'monospace',
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#E8E8E8',
+    color: COLORS.textPrimary,
+    marginBottom: 2,
+  },
+  featureSubtitle: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
     marginBottom: 8,
-    letterSpacing: 4,
-    textAlign: 'center',
-  },
-  descriptionContainer: {
-    width: '100%',
-    paddingTop: 20,
-    paddingHorizontal: 24,
-    borderTopWidth: 1,
-    borderTopColor: '#3D3D3D',
-    marginTop: 20,
-    position: 'relative',
-  },
-  accentLine: {
-    position: 'absolute',
-    top: -1,
-    width: 80,
-    height: 2,
-  },
-  accentLineLeft: {
-    left: 0,
-  },
-  accentLineCenter: {
-    left: 0,
-    right: 0,
-    marginLeft: 'auto',
-    marginRight: 'auto',
-  },
-  accentLineRight: {
-    right: 0,
   },
   featureDescription: {
-    fontFamily: 'monospace',
-    fontSize: 10,
-    color: '#888888',
-    lineHeight: 16,
-    letterSpacing: 1,
-    textAlign: 'center',
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
   },
-  swipeIndicator: {
+  arrowContainer: {
     position: 'absolute',
+    bottom: 16,
+    right: 16,
     width: 36,
     height: 36,
-    borderWidth: 1,
-    borderColor: '#3D3D3D',
-    backgroundColor: '#2A2A2A',
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  swipeIndicatorLeft: {
-    left: 30,
+  arrow: {
+    fontSize: 18,
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
-  swipeIndicatorRight: {
-    right: 30,
+  infoSection: {
+    marginTop: 8,
   },
-  swipeText: {
-    color: '#666666',
-    fontSize: 20,
-    fontWeight: '300',
-  },
-  paginationContainer: {
+  infoCard: {
+    backgroundColor: COLORS.primary + '10',
+    borderRadius: 12,
+    padding: 16,
     flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 32,
-    paddingHorizontal: 24,
+    alignItems: 'flex-start',
   },
-  paginationLine: {
+  infoIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  infoTextContainer: {
     flex: 1,
-    height: 1,
-    backgroundColor: '#3D3D3D',
   },
-  dotContainer: {
-    alignItems: 'center',
-    paddingHorizontal: 20,
+  infoTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginBottom: 4,
   },
-  dot: {
-    width: 6,
-    height: 6,
-    backgroundColor: '#3D3D3D',
-    marginBottom: 6,
-  },
-  dotActive: {
-    width: 8,
-    height: 8,
-  },
-  dotLabel: {
-    fontFamily: 'monospace',
-    fontSize: 9,
-    color: '#555555',
-    letterSpacing: 1,
-  },
-  startButton: {
-    marginHorizontal: 24,
-    borderWidth: 2,
-    backgroundColor: '#2A2A2A',
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  buttonGlow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    opacity: 0.1,
-  },
-  buttonContent: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 18,
-    gap: 12,
-  },
-  startButtonText: {
-    fontFamily: 'monospace',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 3,
-  },
-  startButtonArrow: {
-    fontSize: 20,
-    color: '#E8E8E8',
+  infoDescription: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    lineHeight: 18,
   },
   footer: {
-    paddingHorizontal: 24,
-    paddingBottom: 24,
-  },
-  footerDivider: {
-    height: 1,
-    backgroundColor: '#3D3D3D',
-    marginBottom: 12,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: COLORS.background,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
   },
   footerText: {
-    fontFamily: 'monospace',
-    fontSize: 9,
-    color: '#555555',
-    textAlign: 'center',
-    letterSpacing: 1.5,
+    fontSize: 12,
+    color: COLORS.textSecondary,
   },
 });

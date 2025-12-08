@@ -1,34 +1,68 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, ActivityIndicator, Alert, SafeAreaView, Animated } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  StatusBar,
+} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { enhanceSerial } from '../services/api';
 import { saveBase64Image } from '../utils/storage';
+
+// OceanSeal 색상 팔레트
+const COLORS = {
+  primary: '#007AFF',
+  background: '#F8F9FA',
+  card: '#FFFFFF',
+  textPrimary: '#1D1D1F',
+  textSecondary: '#6B7280',
+  border: '#E5E7EB',
+  accent: '#8B5CF6',  // 보라색 - 개인정보 보호
+  success: '#22C55E',
+};
 
 export default function SerialScreen({ navigation }) {
   const [selectedImage, setSelectedImage] = useState(null);
   const [processedImage, setProcessedImage] = useState(null);
   const [loading, setLoading] = useState(false);
-  const glowAnim = useRef(new Animated.Value(0)).current;
-  const NEON_COLOR = '#B026FF';
-
-  React.useEffect(() => {
-    Animated.loop(Animated.sequence([
-      Animated.timing(glowAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
-      Animated.timing(glowAnim, { toValue: 0, duration: 2000, useNativeDriver: true }),
-    ])).start();
-  }, []);
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Photo library access permission is required.');
+      Alert.alert('권한 필요', '사진 라이브러리 접근 권한이 필요합니다.');
       return;
     }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
+      allowsEditing: false,
       quality: 1,
     });
+
+    if (!result.canceled) {
+      setSelectedImage(result.assets[0].uri);
+      setProcessedImage(null);
+    }
+  };
+
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('권한 필요', '카메라 접근 권한이 필요합니다.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: false,
+      quality: 1,
+    });
+
     if (!result.canceled) {
       setSelectedImage(result.assets[0].uri);
       setProcessedImage(null);
@@ -37,21 +71,23 @@ export default function SerialScreen({ navigation }) {
 
   const processImage = async () => {
     if (!selectedImage) {
-      Alert.alert('Notice', 'Please select an image first.');
+      Alert.alert('알림', '먼저 이미지를 선택해주세요.');
       return;
     }
+
     setLoading(true);
     try {
       const result = await enhanceSerial(selectedImage, 0, 0, 0, 0);
+
       if (result.success && result.image_base64) {
         setProcessedImage(`data:image/png;base64,${result.image_base64}`);
-        Alert.alert('Success', 'Processing complete');
+        Alert.alert('완료', '개인정보가 제거되었습니다!');
       } else {
-        Alert.alert('Failed', result.message || 'Image processing failed.');
+        Alert.alert('실패', result.message || '이미지 처리에 실패했습니다.');
       }
     } catch (error) {
       console.error('Processing error:', error);
-      Alert.alert('Error', error.message || 'An error occurred during image processing.');
+      Alert.alert('오류', error.message || '이미지 처리 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -59,113 +95,126 @@ export default function SerialScreen({ navigation }) {
 
   const saveImage = async () => {
     if (!processedImage) {
-      Alert.alert('Notice', 'No image to save.');
+      Alert.alert('알림', '저장할 이미지가 없습니다.');
       return;
     }
+
     try {
       await saveBase64Image(processedImage, `privacy_${Date.now()}.jpg`);
-      Alert.alert('Saved', 'Image has been saved to gallery.');
+      Alert.alert('저장 완료', '이미지가 갤러리에 저장되었습니다.');
     } catch (error) {
       console.error('Save error:', error);
-      Alert.alert('Save Failed', error.message || 'An error occurred while saving the image.');
+      Alert.alert('저장 실패', error.message || '이미지 저장 중 오류가 발생했습니다.');
     }
   };
 
-  const glowOpacity = glowAnim.interpolate({ inputRange: [0, 1], outputRange: [0.3, 0.8] });
-
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonContainer}>
-          <Text style={styles.backButton}>←</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <View style={styles.headerTop}>
-            <Text style={styles.title}>PRIVACY BLUR</Text>
-            <Animated.View style={[styles.statusDot, { backgroundColor: NEON_COLOR, opacity: glowOpacity }]} />
-          </View>
-          <View style={styles.headerDivider} />
-          <Text style={styles.subtitle}>MODULE//02 // CONCEAL</Text>
+        <View style={styles.headerTitleContainer}>
+          <Text style={styles.headerTitle}>개인정보 보호</Text>
+          <Text style={styles.headerSubtitle}>Trust Proof</Text>
+        </View>
+        <View style={styles.headerIcon}>
+          <Text style={styles.headerIconText}>🛡️</Text>
         </View>
       </View>
 
-      <ScrollView style={styles.scrollView}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
-          {!selectedImage && (
-            <View style={styles.uploadFrame}>
-              <View style={[styles.cornerBracket, styles.cornerTopLeft]} />
-              <View style={[styles.cornerBracket, styles.cornerTopRight]} />
-              <View style={styles.uploadContent}>
-                <Text style={[styles.uploadIcon, { color: NEON_COLOR }]}>▹</Text>
-                <Text style={styles.uploadTitle}>INPUT REQUIRED</Text>
-                <View style={[styles.dividerShort, { backgroundColor: NEON_COLOR }]} />
-                <Text style={styles.uploadSubtext}>JPG, PNG // MAX 10MB</Text>
+          {/* Info Card */}
+          <View style={styles.infoCard}>
+            <Text style={styles.infoIcon}>💡</Text>
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.infoTitle}>자동 감지 및 제거</Text>
+              <Text style={styles.infoDescription}>
+                시리얼 번호, 모델명, IMEI, QR코드 등 민감한 정보를 AI가 자동으로 감지하여 자연스럽게 제거합니다.
+              </Text>
+            </View>
+          </View>
+
+          {/* Image Upload Section */}
+          {!selectedImage ? (
+            <View style={styles.uploadSection}>
+              <View style={styles.uploadCard}>
+                <Text style={styles.uploadIcon}>🔒</Text>
+                <Text style={styles.uploadTitle}>이미지 업로드</Text>
+                <Text style={styles.uploadDescription}>
+                  개인정보가 포함된 제품 사진을 선택해주세요
+                </Text>
                 <View style={styles.uploadButtons}>
-                  <TouchableOpacity style={[styles.uploadButton, { borderColor: NEON_COLOR }]} onPress={pickImage}>
-                    <Text style={[styles.uploadButtonText, { color: NEON_COLOR }]}>GALLERY</Text>
+                  <TouchableOpacity style={[styles.uploadButton, { backgroundColor: COLORS.accent }]} onPress={pickImage}>
+                    <Text style={styles.uploadButtonIcon}>🖼️</Text>
+                    <Text style={styles.uploadButtonText}>갤러리</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.uploadButton, { backgroundColor: COLORS.accent }]} onPress={takePhoto}>
+                    <Text style={styles.uploadButtonIcon}>📸</Text>
+                    <Text style={styles.uploadButtonText}>카메라</Text>
                   </TouchableOpacity>
                 </View>
               </View>
-              <View style={[styles.cornerBracket, styles.cornerBottomLeft]} />
-              <View style={[styles.cornerBracket, styles.cornerBottomRight]} />
             </View>
-          )}
-
-          {selectedImage && (
-            <View style={styles.imageSection}>
-              <View style={styles.sectionHeader}>
-                <View style={[styles.sectionIndicator, { backgroundColor: NEON_COLOR }]} />
-                <Text style={styles.sectionTitle}>SOURCE IMAGE</Text>
-              </View>
-              <View style={styles.imageFrame}>
-                <Image source={{ uri: selectedImage }} style={styles.image} />
-                <View style={styles.imageOverlay}>
-                  <Text style={styles.imageLabel}>INPUT</Text>
+          ) : (
+            <>
+              {/* Selected Image */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>원본 이미지</Text>
+                <View style={styles.imageCard}>
+                  <Image source={{ uri: selectedImage }} style={styles.image} resizeMode="cover" />
                 </View>
+                <TouchableOpacity style={styles.changeButton} onPress={pickImage}>
+                  <Text style={styles.changeButtonText}>이미지 변경</Text>
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity style={styles.changeButton} onPress={pickImage}>
-                <Text style={styles.changeButtonText}>↻ CHANGE</Text>
-              </TouchableOpacity>
-            </View>
-          )}
 
-          {selectedImage && (
-            <TouchableOpacity style={[styles.processButton, { borderColor: NEON_COLOR }]} onPress={processImage} disabled={loading}>
-              <Animated.View style={[styles.buttonGlow, { backgroundColor: NEON_COLOR, opacity: loading ? 0.5 : glowOpacity }]} />
-              <View style={styles.processButtonContent}>
+              {/* Process Button */}
+              <TouchableOpacity
+                style={[styles.processButton, loading && styles.processButtonDisabled]}
+                onPress={processImage}
+                disabled={loading}
+              >
                 {loading ? (
-                  <>
-                    <ActivityIndicator color={NEON_COLOR} size="small" />
-                    <Text style={[styles.processButtonText, { color: NEON_COLOR }]}>PROCESSING...</Text>
-                  </>
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                    <Text style={styles.processButtonText}>처리 중...</Text>
+                  </View>
                 ) : (
-                  <Text style={[styles.processButtonText, { color: NEON_COLOR }]}>▸ EXECUTE BLUR</Text>
+                  <Text style={styles.processButtonText}>🛡️ 개인정보 제거하기</Text>
                 )}
-              </View>
-            </TouchableOpacity>
-          )}
+              </TouchableOpacity>
 
-          {processedImage && (
-            <View style={styles.resultSection}>
-              <View style={styles.resultHeader}>
-                <Animated.View style={[styles.resultIndicator, { backgroundColor: NEON_COLOR, opacity: glowOpacity }]} />
-                <Text style={styles.resultTitle}>OUTPUT // COMPLETE</Text>
-              </View>
-              <View style={styles.imageFrame}>
-                <Image source={{ uri: processedImage }} style={styles.image} />
-                <View style={styles.imageOverlay}>
-                  <Text style={styles.imageLabel}>OUTPUT</Text>
+              {/* Result */}
+              {processedImage && (
+                <View style={styles.section}>
+                  <View style={styles.resultHeader}>
+                    <Text style={styles.sectionTitle}>처리된 이미지</Text>
+                    <View style={styles.successBadge}>
+                      <Text style={styles.successBadgeText}>✓ 보호됨</Text>
+                    </View>
+                  </View>
+                  <View style={styles.imageCard}>
+                    <Image source={{ uri: processedImage }} style={styles.image} resizeMode="cover" />
+                  </View>
+                  <View style={styles.resultActions}>
+                    <TouchableOpacity style={styles.saveButton} onPress={saveImage}>
+                      <Text style={styles.saveButtonText}>💾 저장하기</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.retryButton}
+                      onPress={() => setProcessedImage(null)}
+                    >
+                      <Text style={styles.retryButtonText}>다시 처리</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
-              <View style={styles.resultActions}>
-                <TouchableOpacity style={[styles.actionButton, { borderColor: NEON_COLOR }]} onPress={saveImage}>
-                  <Text style={[styles.actionButtonText, { color: NEON_COLOR }]}>↓ SAVE</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionButton} onPress={() => setProcessedImage(null)}>
-                  <Text style={styles.actionButtonText}>↻ RETRY</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+              )}
+            </>
           )}
         </View>
       </ScrollView>
@@ -174,51 +223,244 @@ export default function SerialScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1C1C1C' },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20, backgroundColor: '#1C1C1C', borderBottomWidth: 1, borderBottomColor: '#3D3D3D' },
-  backButtonContainer: { marginRight: 16 },
-  backButton: { fontSize: 28, color: '#E8E8E8', fontWeight: '300' },
-  headerContent: { flex: 1 },
-  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  title: { fontFamily: 'monospace', fontSize: 20, fontWeight: '700', color: '#E8E8E8', letterSpacing: 2 },
-  statusDot: { width: 8, height: 8, borderRadius: 4 },
-  headerDivider: { height: 1, backgroundColor: '#3D3D3D', marginBottom: 8 },
-  subtitle: { fontFamily: 'monospace', fontSize: 10, color: '#666666', letterSpacing: 1 },
-  scrollView: { flex: 1 },
-  content: { padding: 20 },
-  uploadFrame: { backgroundColor: '#2A2A2A', borderWidth: 1, borderColor: '#3D3D3D', padding: 40, position: 'relative', marginBottom: 24 },
-  cornerBracket: { position: 'absolute', width: 16, height: 16, borderColor: '#555555' },
-  cornerTopLeft: { top: -1, left: -1, borderTopWidth: 2, borderLeftWidth: 2 },
-  cornerTopRight: { top: -1, right: -1, borderTopWidth: 2, borderRightWidth: 2 },
-  cornerBottomLeft: { bottom: -1, left: -1, borderBottomWidth: 2, borderLeftWidth: 2 },
-  cornerBottomRight: { bottom: -1, right: -1, borderBottomWidth: 2, borderRightWidth: 2 },
-  uploadContent: { alignItems: 'center' },
-  uploadIcon: { fontSize: 48, marginBottom: 16 },
-  uploadTitle: { fontFamily: 'monospace', fontSize: 16, fontWeight: '700', color: '#E8E8E8', letterSpacing: 2, marginBottom: 12 },
-  dividerShort: { width: 60, height: 2, marginBottom: 12 },
-  uploadSubtext: { fontFamily: 'monospace', fontSize: 10, color: '#888888', marginBottom: 24, letterSpacing: 1 },
-  uploadButtons: { flexDirection: 'row', gap: 12, width: '100%' },
-  uploadButton: { flex: 1, borderWidth: 2, backgroundColor: '#2A2A2A', paddingVertical: 14, alignItems: 'center' },
-  uploadButtonText: { fontFamily: 'monospace', fontSize: 13, fontWeight: '700', letterSpacing: 1.5 },
-  imageSection: { marginBottom: 24 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  sectionIndicator: { width: 4, height: 12, marginRight: 8 },
-  sectionTitle: { fontFamily: 'monospace', fontSize: 12, fontWeight: '700', color: '#E8E8E8', letterSpacing: 1.5, flex: 1 },
-  imageFrame: { position: 'relative', borderWidth: 1, borderColor: '#3D3D3D' },
-  image: { width: '100%', height: 280, backgroundColor: '#2A2A2A' },
-  imageOverlay: { position: 'absolute', top: 8, left: 8, backgroundColor: 'rgba(0, 0, 0, 0.7)', paddingHorizontal: 12, paddingVertical: 4 },
-  imageLabel: { fontFamily: 'monospace', fontSize: 10, color: '#E8E8E8', letterSpacing: 1 },
-  changeButton: { marginTop: 8, paddingVertical: 10, borderWidth: 1, borderColor: '#3D3D3D', alignItems: 'center', backgroundColor: '#2A2A2A' },
-  changeButtonText: { fontFamily: 'monospace', fontSize: 11, color: '#888888', letterSpacing: 1 },
-  processButton: { borderWidth: 2, backgroundColor: '#2A2A2A', marginBottom: 24, position: 'relative', overflow: 'hidden' },
-  buttonGlow: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.1 },
-  processButtonContent: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 18, gap: 12 },
-  processButtonText: { fontFamily: 'monospace', fontSize: 14, fontWeight: '700', letterSpacing: 2 },
-  resultSection: { marginBottom: 24 },
-  resultHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  resultIndicator: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
-  resultTitle: { fontFamily: 'monospace', fontSize: 12, fontWeight: '700', color: '#E8E8E8', letterSpacing: 1.5 },
-  resultActions: { flexDirection: 'row', gap: 12, marginTop: 12 },
-  actionButton: { flex: 1, borderWidth: 2, borderColor: '#3D3D3D', backgroundColor: '#2A2A2A', paddingVertical: 14, alignItems: 'center' },
-  actionButtonText: { fontFamily: 'monospace', fontSize: 12, fontWeight: '700', color: '#888888', letterSpacing: 1 },
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: COLORS.card,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backButtonText: {
+    fontSize: 24,
+    color: COLORS.textPrimary,
+  },
+  headerTitleContainer: {
+    flex: 1,
+    marginLeft: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+  },
+  headerIcon: {
+    width: 40,
+    height: 40,
+    backgroundColor: COLORS.accent + '15',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerIconText: {
+    fontSize: 20,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  content: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  infoCard: {
+    backgroundColor: COLORS.accent + '10',
+    borderRadius: 14,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+  infoIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  infoTextContainer: {
+    flex: 1,
+  },
+  infoTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.accent,
+    marginBottom: 4,
+  },
+  infoDescription: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    lineHeight: 19,
+  },
+  uploadSection: {
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 350,
+  },
+  uploadCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    padding: 40,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    borderStyle: 'dashed',
+  },
+  uploadIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  uploadTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginBottom: 8,
+  },
+  uploadDescription: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  uploadButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  uploadButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  uploadButtonIcon: {
+    fontSize: 16,
+  },
+  uploadButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginBottom: 12,
+  },
+  imageCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  image: {
+    width: '100%',
+    height: 280,
+    backgroundColor: '#F0F0F0',
+  },
+  changeButton: {
+    marginTop: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  changeButtonText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
+  processButton: {
+    backgroundColor: COLORS.accent,
+    borderRadius: 14,
+    paddingVertical: 18,
+    alignItems: 'center',
+    marginBottom: 24,
+    shadowColor: COLORS.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  processButtonDisabled: {
+    opacity: 0.7,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  processButtonText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  resultHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  successBadge: {
+    backgroundColor: COLORS.success + '15',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  successBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.success,
+  },
+  resultActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  retryButton: {
+    flex: 1,
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  retryButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
 });
