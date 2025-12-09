@@ -81,23 +81,58 @@ export default function PosterScreen({ navigation }) {
   };
 
   const pickReferenceImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('권한 필요', '사진 라이브러리 접근 권한이 필요합니다.');
-      return;
-    }
+    Alert.alert(
+      '레퍼런스 이미지 추가',
+      '이미지를 어떻게 추가하시겠어요?',
+      [
+        {
+          text: '갤러리',
+          onPress: async () => {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert('권한 필요', '사진 라이브러리 접근 권한이 필요합니다.');
+              return;
+            }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: true,
-      allowsEditing: false,
-      quality: 1,
-    });
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              allowsMultipleSelection: true,
+              allowsEditing: false,
+              quality: 1,
+            });
 
-    if (!result.canceled && result.assets) {
-      const newImages = result.assets.map(asset => asset.uri);
-      setReferenceImages([...referenceImages, ...newImages]);
-    }
+            if (!result.canceled && result.assets) {
+              const newImages = result.assets.map(asset => asset.uri);
+              setReferenceImages([...referenceImages, ...newImages]);
+            }
+          },
+        },
+        {
+          text: '카메라',
+          onPress: async () => {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert('권한 필요', '카메라 접근 권한이 필요합니다.');
+              return;
+            }
+
+            const result = await ImagePicker.launchCameraAsync({
+              allowsEditing: false,
+              quality: 1,
+            });
+
+            if (!result.canceled && result.assets) {
+              const newImages = result.assets.map(asset => asset.uri);
+              setReferenceImages([...referenceImages, ...newImages]);
+            }
+          },
+        },
+        {
+          text: '취소',
+          style: 'cancel',
+        },
+      ],
+    );
   };
 
   const removeReferenceImage = (index) => {

@@ -116,3 +116,8 @@ def detect_defects_hybrid(image_base64: str, gemini_prompt: str, yolo_model_path
 - pillow
 """
 
+
+
+
+
+

@@ -1,49 +1,44 @@
 @echo off
 setlocal enabledelayedexpansion
-chcp 65001 >nul
+
 echo ========================================
-echo    당근 부스터 - NGROK 완전 자동 실행
-echo    Karrot Booster - Full Auto Launch
+echo    Karrot Booster - NGROK Auto Launch
 echo ========================================
 echo.
-echo 🚀 백엔드 + ngrok + 모바일 앱을 모두 시작합니다!
+echo [*] Backend + ngrok + Mobile App starting...
 echo.
 
-REM 현재 디렉토리 확인
 cd /d "%~dp0"
 
 REM ============================================
-REM 1. ngrok 설치 확인
+REM 1. Check ngrok installation
 REM ============================================
-echo [1/6] ngrok 설치 확인 중...
+echo [1/6] Checking ngrok installation...
 
-REM 로컬 ngrok 확인
 if exist "%~dp0ngrok.exe" (
     set NGROK_CMD=%~dp0ngrok.exe
-    echo ✅ ngrok 발견 (로컬)
+    echo [OK] ngrok found - local
     goto :ngrok_installed
 )
 
-REM 시스템 ngrok 확인
 where ngrok >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
     set NGROK_CMD=ngrok
-    echo ✅ ngrok 발견 (시스템)
+    echo [OK] ngrok found - system
     goto :ngrok_installed
 )
 
-REM ngrok이 없음
 echo.
-echo ❌ ngrok이 설치되어 있지 않습니다!
+echo [ERROR] ngrok is not installed!
 echo.
-echo 🚀 간편 설치: install-ngrok.bat 실행
-echo    또는
-echo 📥 수동 설치:
-echo    1. https://ngrok.com/download 접속
-echo    2. Windows 64-bit 다운로드
-echo    3. 압축 해제 후 ngrok.exe를 이 폴더에 복사
+echo Quick install: Run install-ngrok.bat
+echo    OR
+echo Manual install:
+echo    1. Visit https://ngrok.com/download
+echo    2. Download Windows 64-bit
+echo    3. Extract and copy ngrok.exe to this folder
 echo.
-echo 설치 후 이 스크립트를 다시 실행하세요!
+echo Run this script again after installation!
 echo.
 pause
 exit /b 1
@@ -52,11 +47,10 @@ exit /b 1
 echo.
 
 REM ============================================
-REM 2. ngrok 인증 확인
+REM 2. Check ngrok authentication
 REM ============================================
-echo [2/6] ngrok 인증 확인 중...
+echo [2/6] Checking ngrok authentication...
 
-REM ngrok 설정 파일 확인 (Windows의 경우 - ngrok v3)
 set NGROK_CONFIG=%LOCALAPPDATA%\ngrok\ngrok.yml
 if not exist "%NGROK_CONFIG%" (
     set NGROK_CONFIG=%USERPROFILE%\.ngrok2\ngrok.yml
@@ -64,199 +58,175 @@ if not exist "%NGROK_CONFIG%" (
 
 if not exist "%NGROK_CONFIG%" (
     echo.
-    echo ⚠️  ngrok 인증 토큰이 설정되지 않았습니다!
+    echo [WARNING] ngrok auth token is not configured!
     echo.
     
-    REM .env 파일에서 NGROK_AUTHTOKEN 읽기
     set NGROK_TOKEN=
     if exist .env (
-        echo ✅ .env 파일에서 NGROK_AUTHTOKEN 확인 중...
+        echo [OK] Checking NGROK_AUTHTOKEN in .env file...
         for /f "tokens=2 delims==" %%a in ('findstr /i /c:"NGROK_AUTHTOKEN" .env 2^>nul') do (
             set "NGROK_TOKEN=%%a"
-            REM 따옴표 제거
             set "NGROK_TOKEN=!NGROK_TOKEN:"=!"
-            REM 앞뒤 공백 제거
             for /f "tokens=*" %%b in ("!NGROK_TOKEN!") do set "NGROK_TOKEN=%%b"
         )
     )
     
-    REM .env에서 토큰을 찾지 못한 경우 사용자 입력 요청
     if "!NGROK_TOKEN!"=="" (
         echo.
-        echo 1. https://dashboard.ngrok.com/signup 접속 (무료)
-        echo 2. Google/GitHub로 로그인
-        echo 3. https://dashboard.ngrok.com/get-started/your-authtoken 접속
-        echo 4. 인증 토큰 복사
-        echo 5. .env 파일에 NGROK_AUTHTOKEN=YOUR_TOKEN 형식으로 추가
+        echo 1. Visit https://dashboard.ngrok.com/signup - free
+        echo 2. Login with Google or GitHub
+        echo 3. Visit https://dashboard.ngrok.com/get-started/your-authtoken
+        echo 4. Copy the auth token
+        echo 5. Add NGROK_AUTHTOKEN=YOUR_TOKEN to .env file
         echo.
-        set /p NGROK_TOKEN="인증 토큰을 입력하세요 (또는 Enter로 건너뛰기): "
+        set /p NGROK_TOKEN="Enter auth token or press Enter to skip: "
     ) else (
-        echo ✅ .env 파일에서 NGROK_AUTHTOKEN 발견!
+        echo [OK] NGROK_AUTHTOKEN found in .env file!
     )
 
     if not "!NGROK_TOKEN!"=="" (
-        "%NGROK_CMD%" config add-authtoken "!NGROK_TOKEN!"
+        "!NGROK_CMD!" config add-authtoken "!NGROK_TOKEN!"
         if !errorlevel! equ 0 (
-            echo ✅ 인증 토큰이 설정되었습니다!
+            echo [OK] Auth token configured!
         ) else (
-            echo ❌ 토큰 설정 실패. 수동으로 설정해주세요:
-            echo    "%NGROK_CMD%" config add-authtoken YOUR_TOKEN
+            echo [ERROR] Token configuration failed. Please configure manually:
+            echo    "!NGROK_CMD!" config add-authtoken YOUR_TOKEN
             pause
             exit /b 1
         )
     ) else (
-        echo ! 경고: 인증 없이 계속합니다 (제한된 기능)
+        echo [!] Warning: Continuing without authentication - limited features
     )
 ) else (
-    echo ✅ ngrok 인증 확인됨
+    echo [OK] ngrok authentication verified
 )
 echo.
 
 REM ============================================
-REM 3. 가상환경 확인 및 활성화
+REM 3. Check virtual environment
 REM ============================================
-echo [3/6] 가상환경 확인 중...
+echo [3/6] Checking virtual environment...
 
 if exist venv\Scripts\activate.bat (
-    echo ✅ 가상환경 발견, 활성화 중...
+    echo [OK] Virtual environment found, activating...
     call venv\Scripts\activate.bat
 ) else (
-    echo ! 가상환경이 없습니다. 새로 생성합니다...
+    echo [!] No virtual environment found. Creating new one...
     python -m venv venv
     call venv\Scripts\activate.bat
-    echo ✅ 의존성 설치 중...
+    echo [OK] Installing dependencies...
     pip install -r requirements.txt
 )
 echo.
 
 REM ============================================
-REM 4. 환경변수 확인
+REM 4. Check environment variables
 REM ============================================
-echo [4/6] 환경변수 확인 중...
+echo [4/6] Checking environment variables...
 
 if "%GEMINI_API_KEY%"=="" (
     if exist .env (
-        echo ✅ .env 파일에서 환경변수 로드
+        echo [OK] Loading environment variables from .env file
     ) else (
         echo.
-        echo ⚠️  GEMINI_API_KEY가 설정되지 않았습니다!
+        echo [WARNING] GEMINI_API_KEY is not configured!
         echo.
-        set /p API_KEY="Gemini API 키를 입력하세요: "
+        set /p API_KEY="Enter Gemini API key: "
         echo GEMINI_API_KEY=!API_KEY!> .env
-        echo ✅ .env 파일에 저장되었습니다!
+        echo [OK] Saved to .env file!
     )
 ) else (
-    echo ✅ GEMINI_API_KEY 확인됨
+    echo [OK] GEMINI_API_KEY verified
 )
 echo.
 
 REM ============================================
-REM 5. 백엔드 서버 시작
+REM 5. Start backend server
 REM ============================================
-echo [5/6] 백엔드 서버 시작 중...
+echo [5/6] Starting backend server...
 echo.
-echo 백엔드 서버가 새 창에서 실행됩니다.
-echo 서버 주소: http://localhost:8000
+echo Backend server will run in a new window.
+echo Server address: http://localhost:8000
 echo.
 
-start "당근 부스터 - 백엔드 서버" cmd /k "cd /d "%~dp0" && venv\Scripts\activate.bat && python run.py"
+start "Karrot Booster - Backend" cmd /k "cd /d %~dp0 && call venv\Scripts\activate.bat && python run.py"
 
-REM 서버 시작 대기
-echo 백엔드 서버 초기화 대기 중...
+echo Waiting for backend server initialization...
 timeout /t 5 /nobreak >nul
 echo.
 
 REM ============================================
-REM 6. ngrok 터널 시작
+REM 6. Start ngrok tunnel
 REM ============================================
-echo [6/6] ngrok 터널 시작 중...
+echo [6/6] Starting ngrok tunnel...
 echo.
-echo ngrok이 새 창에서 실행됩니다.
-echo ngrok 웹 인터페이스: http://localhost:4040
+echo ngrok will run in a new window.
+echo ngrok web interface: http://localhost:4040
 echo.
 
-start "당근 부스터 - ngrok 터널" cmd /k ""%NGROK_CMD%" http 8000"
+start "Karrot Booster - ngrok" cmd /k "!NGROK_CMD! http 8000"
 
-REM ngrok 시작 대기
-echo ngrok 터널 초기화 대기 중...
+echo Waiting for ngrok tunnel initialization...
 timeout /t 5 /nobreak >nul
 echo.
 
 REM ============================================
-REM 7. 모바일 앱 준비 및 실행
+REM 7. Prepare and run mobile app
 REM ============================================
-echo [7/7] 모바일 앱 준비 중...
+echo [7/7] Preparing mobile app...
 echo.
 
-cd mobile
+cd /d "%~dp0mobile"
 
-REM node_modules 확인 및 expo 의존성 확인
 if not exist node_modules (
-    echo ! node_modules가 없습니다. npm install 실행 중...
+    echo [!] node_modules not found. Running npm install...
     call npm install
 ) else (
-    echo ✅ node_modules 발견
+    echo [OK] node_modules found
 )
 
-REM expo 의존성 확인
 echo.
-echo ✅ expo 의존성 확인 중...
-npm list expo >nul 2>&1
-if errorlevel 1 (
-    echo ! expo 의존성 재설치 중...
-    call npm install
-)
-
-REM API URL 자동 설정 (ngrok URL 감지)
-echo.
-echo ✅ API URL 자동 설정 중 (ngrok URL 감지)...
-echo    ngrok 터널이 완전히 시작될 때까지 조금 더 대기 중...
+echo [OK] Auto-configuring API URL - detecting ngrok URL...
 timeout /t 3 /nobreak >nul
 node scripts\setup-api-url.js
 echo.
 
 echo.
 echo ========================================
-echo    🎉 모든 서비스 시작 완료!
+echo    All services started successfully!
 echo ========================================
 echo.
-echo 실행 중인 서비스:
-echo   ✅ 백엔드 서버: http://localhost:8000
-echo   ✅ ngrok 터널: http://localhost:4040 (웹 UI)
+echo Running services:
+echo   [OK] Backend server: http://localhost:8000
+echo   [OK] ngrok tunnel: http://localhost:4040 - Web UI
 echo.
 echo.
 echo ========================================
-echo    📱 모바일 앱 시작 중... (터널 모드)
+echo    Starting mobile app - Tunnel mode
 echo ========================================
 echo.
-echo 🌐 Expo 터널 모드로 시작합니다 (인터넷 연결)
+echo Starting Expo in tunnel mode - internet connection
 echo.
-echo 잠시 후 (30초-1분 소요):
-echo   1. 브라우저가 열리고 Expo DevTools 표시
-echo   2. 이 창에 QR 코드가 나타납니다
-echo   3. 스마트폰 Expo Go 앱으로 QR 코드 스캔
+echo In a moment - 30sec to 1min:
+echo   1. Browser will open with Expo DevTools
+echo   2. QR code will appear in this window
+echo   3. Scan QR code with Expo Go app on your phone
 echo.
-echo 💡 Expo Go 앱이 없다면:
-echo   - Android: Play Store에서 "Expo Go" 설치
-echo   - iOS: App Store에서 "Expo Go" 설치
+echo [TIP] If you do not have Expo Go:
+echo   - Android: Install Expo Go from Play Store
+echo   - iOS: Install Expo Go from App Store
 echo.
-echo 💡 참고:
-echo   - 터널 모드는 초기화에 시간이 걸립니다
-echo   - ngrok과 Expo 터널 모두 인터넷을 통해 연결됩니다
-echo   - QR 코드를 스캔하면 어디서든 앱 실행 가능!
+echo [TIP] To exit: Ctrl+C - close all windows
 echo.
-echo 💡 종료: Ctrl+C (모든 창 닫기)
-echo.
-echo 시작합니다...
+echo Starting...
 timeout /t 3 /nobreak >nul
 echo.
 
-REM 모바일 앱 시작 (터널 모드)
+set CI=true
 call npm run start:tunnel
 
-REM 종료 시
 echo.
-echo 모바일 앱이 종료되었습니다.
-echo 백엔드 서버와 ngrok은 여전히 실행 중입니다.
+echo Mobile app has stopped.
+echo Backend server and ngrok are still running.
 echo.
 pause
