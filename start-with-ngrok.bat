@@ -222,8 +222,7 @@ echo Starting...
 timeout /t 3 /nobreak >nul
 echo.
 
-set CI=true
-call npm run start:tunnel
+call npx expo start --tunnel
 
 echo.
 echo Mobile app has stopped.
