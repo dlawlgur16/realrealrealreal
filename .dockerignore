@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Git
+.git/
+.gitignore
+
+# Node.js (mobile 폴더는 EC2에 필요 없음)
+node_modules/
+mobile/
+frontend/
+
+# 기타
+*.log
+.env
+.backup/
+.claude/
+.expo/
+ngrok.exe
+*.bat
+*.sh
+*.md
+package.json
+package-lock.json
