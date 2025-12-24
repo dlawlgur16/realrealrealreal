@@ -485,3 +485,71 @@ async def get_prompts():
         "serial": SERIAL_ENHANCEMENT_PROMPT,
         "defect": DEFECT_HIGHLIGHT_PROMPT
     }
+
+
+# ==================== 인증 관련 엔드포인트 ====================
+
+from fastapi import Depends
+from sqlalchemy.orm import Session
+from app.auth import oauth, get_db, create_access_token, get_current_user, get_or_create_user
+from app.models import User, Base, engine, TokenResponse, UserResponse
+
+
+# 데이터베이스 테이블 생성
+Base.metadata.create_all(bind=engine)
+
+
+@app.get("/auth/google/login")
+async def google_login(request: Request):
+    """구글 로그인 시작"""
+    redirect_uri = request.url_for('google_callback')
+    return await oauth.google.authorize_redirect(request, redirect_uri)
+
+
+@app.get("/auth/google/callback")
+async def google_callback(request: Request, db: Session = Depends(get_db)):
+    """구글 OAuth 콜백"""
+    try:
+        # OAuth 토큰 교환
+        token = await oauth.google.authorize_access_token(request)
+        user_info = token.get('userinfo')
+
+        if not user_info:
+            raise HTTPException(status_code=400, detail="Failed to get user info from Google")
+
+        # 사용자 조회 또는 생성
+        user = get_or_create_user(
+            db=db,
+            email=user_info['email'],
+            name=user_info.get('name', ''),
+            picture=user_info.get('picture', ''),
+            provider='google',
+            provider_id=user_info['sub']
+        )
+
+        # JWT 토큰 생성
+        access_token = create_access_token(data={"sub": user.id})
+
+        # 모바일 앱으로 리다이렉트 (Deep Link)
+        # 실제로는 모바일 앱의 Custom URL Scheme 사용
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": UserResponse.from_orm(user)
+        }
+
+    except Exception as e:
+        logger.error(f"Google OAuth error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Authentication failed: {str(e)}")
+
+
+@app.get("/auth/me", response_model=UserResponse)
+async def get_me(current_user: User = Depends(get_current_user)):
+    """현재 로그인한 사용자 정보 조회"""
+    return current_user
+
+
+@app.post("/auth/logout")
+async def logout(current_user: User = Depends(get_current_user)):
+    """로그아웃 (클라이언트에서 토큰 삭제)"""
+    return {"message": "Successfully logged out"}
