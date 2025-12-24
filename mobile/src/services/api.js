@@ -3,7 +3,7 @@ import axios from 'axios';
 // API 기본 URL - 개발 환경에 맞게 변경하세요
 // 실제 디바이스에서 테스트 시 컴퓨터의 로컬 IP 사용
 // npm run setup-api 명령어로 자동 설정 가능
-const API_BASE_URL = 'https://posthumeral-grayish-cristian.ngrok-free.dev';
+const API_BASE_URL = 'https://api.ocean-seal.shop';
 
 // 재시도 설정
 const MAX_RETRIES = 2;
