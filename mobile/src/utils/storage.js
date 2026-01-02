@@ -1,5 +1,6 @@
 import * as MediaLibrary from 'expo-media-library';
 import * as FileSystem from 'expo-file-system/legacy';
+import { uploadImageToSupabase } from '../services/supabaseStorageService';
 
 /**
  * base64 이미지를 디바이스에 저장
@@ -184,4 +185,32 @@ export const saveImageFromUri = async (uri) => {
     console.error('이미지 저장 에러:', error);
     throw error;
   }
+};
+
+/**
+ * 이미지를 갤러리와 Supabase Storage에 동시 저장
+ * @param {string} base64Image - base64 인코딩된 이미지
+ * @param {string} processType - 처리 타입 (poster, serial, defect)
+ * @param {string} filename - 저장할 파일명 (선택)
+ * @returns {Promise<{localUri: string, cloudUrl?: string}>}
+ */
+export const saveImageWithCloud = async (base64Image, processType = 'poster', filename = null) => {
+  // 1. 갤러리에 저장
+  const localUri = await saveBase64Image(base64Image, filename);
+
+  // 2. Supabase Storage에 업로드 (비동기, 실패해도 갤러리 저장은 유지)
+  let cloudUrl = null;
+  try {
+    const cloudResult = await uploadImageToSupabase(base64Image, processType);
+    if (cloudResult.success) {
+      cloudUrl = cloudResult.url;
+      console.log('Supabase Storage 저장 완료:', cloudUrl);
+    } else if (cloudResult.error !== 'not_logged_in') {
+      console.log('Supabase Storage 저장 실패:', cloudResult.error);
+    }
+  } catch (cloudError) {
+    console.log('Supabase Storage 업로드 에러 (무시):', cloudError);
+  }
+
+  return { localUri, cloudUrl };
 };

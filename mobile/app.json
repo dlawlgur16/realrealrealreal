@@ -15,8 +15,13 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+    "scheme": [
+      "ocean-seal",
+      "com.googleusercontent.apps.46905295654-71oiinn5ais2ffe73tg3jfojvbad6li8"
+    ],
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.oceanseal.karrotbooster",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "이 앱은 처리된 이미지를 갤러리에 저장하기 위해 사진 라이브러리 접근 권한이 필요합니다.",
         "NSCameraUsageDescription": "이 앱은 상품 사진을 촬영하기 위해 카메라 접근 권한이 필요합니다.",
@@ -33,10 +38,12 @@
               "NSIncludesSubdomains": true
             }
           }
-        }
+        },
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
+      "package": "com.oceanseal.karrotbooster",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -48,7 +55,11 @@
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.READ_MEDIA_IMAGES",
-        "android.permission.READ_MEDIA_VIDEO"
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.ACCESS_MEDIA_LOCATION",
+        "android.permission.READ_MEDIA_AUDIO"
       ]
     },
     "web": {
@@ -71,6 +82,12 @@
         }
       ],
       "expo-web-browser"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "73098832-ccfd-413f-a419-8fd5634121bf"
+      }
+    },
+    "owner": "jihyoukim"
   }
 }

@@ -13,7 +13,8 @@
       "Skill(frontend-design)",
       "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Apply Industrial Minimal + Subtle Neon design to mobile app\n\n- Redesign all mobile screens with Industrial + Neon aesthetic\n- HomeScreen: Add swipeable feature cards with color-coded modules\n  - Cyan (#00F5FF) for Pro Poster\n  - Purple (#B026FF) for Privacy Blur\n  - Orange (#FF6B35) for Defect Scan\n  - Improve swipe sensitivity and spring animations\n  - Add animated accent line that moves with card position\n- PosterScreen: Complete redesign with Cyan neon accents\n  - Corner brackets and industrial typography\n  - Style grid with 3-letter codes (MIN, VIN, STU, etc.)\n- SerialScreen: Purple neon theme with simplified structure\n- DefectScreen: Orange neon theme with defect description input\n- Add macOS support: start-with-ngrok.sh for one-click setup\n- Improve card design with enhanced shadows and borders\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git push:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(eas build:*)"
     ],
     "deny": [],
     "ask": []

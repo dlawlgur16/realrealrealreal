@@ -22,7 +22,7 @@ const COLORS = {
   defect: '#F59E0B',    // 주황 - 하자
 };
 
-export default function HomeScreen({ navigation }) {
+export default function HomeScreen({ navigation, onLogout, isGuest }) {
   const features = [
     {
       id: 'poster',
@@ -66,10 +66,33 @@ export default function HomeScreen({ navigation }) {
 
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.logoContainer}>
-          <Text style={styles.logo}>OceanSeal</Text>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>AI</Text>
+        <View style={styles.headerTop}>
+          <View style={styles.logoContainer}>
+            <Text style={styles.logo}>OceanSeal</Text>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>AI</Text>
+            </View>
+          </View>
+          <View style={styles.headerButtons}>
+            {!isGuest && (
+              <>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('MyCertificates')}
+                  style={styles.certButton}
+                >
+                  <Text style={styles.certText}>인증서</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('MyImages')}
+                  style={styles.myImagesButton}
+                >
+                  <Text style={styles.myImagesText}>내 이미지</Text>
+                </TouchableOpacity>
+              </>
+            )}
+            <TouchableOpacity onPress={onLogout} style={styles.logoutButton}>
+              <Text style={styles.logoutText}>{isGuest ? '로그인' : '로그아웃'}</Text>
+            </TouchableOpacity>
           </View>
         </View>
         <Text style={styles.tagline}>신뢰를 거래하는 기술</Text>
@@ -152,10 +175,53 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  certButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#22C55E' + '15',
+  },
+  certText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#22C55E',
+  },
+  myImagesButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: COLORS.primary + '15',
+  },
+  myImagesText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: COLORS.primary,
+  },
+  logoutButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: COLORS.border,
+  },
+  logoutText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
   },
   logo: {
     fontSize: 28,

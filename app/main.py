@@ -16,6 +16,10 @@ from fastapi import FastAPI, File, UploadFile, HTTPException, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.datastructures import UploadFile as StarletteUploadFile
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+import os
 
 from app.config import client
 from app.models import ProcessResult
@@ -35,16 +39,39 @@ from app.prompts import (
 from app.utils import encode_image_to_base64, extract_image_from_response
 import base64
 from app.gemini_client import call_gemini_api
+from app.certificate.router import router as certificate_router
 
 # 로깅 설정
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+# Rate Limiter 설정 (API 남용 방지)
+limiter = Limiter(key_func=get_remote_address)
+
+# CORS 허용 도메인 목록 (보안)
+ALLOWED_ORIGINS = [
+    "https://ocean-seal.shop",
+    "https://api.ocean-seal.shop",
+    "https://www.ocean-seal.shop",
+]
+
+# 개발 환경에서는 추가 origin 허용
+if os.getenv("ENV", "production") == "development":
+    ALLOWED_ORIGINS.extend([
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "http://localhost:19006",  # Expo web
+    ])
 
 app = FastAPI(
     title="당근 부스터 API",
     description="중고거래 프리미엄 포토 서비스 - AI 기반 이미지 변환",
     version="1.0.0"
 )
+
+# Rate Limiter 등록
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # 전역 예외 핸들러
 @app.exception_handler(Exception)
@@ -67,21 +94,26 @@ async def global_exception_handler(request: Request, exc: Exception):
             "error_type": type(exc).__name__
         }
     )
-    # CORS 헤더 추가
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "*"
-    response.headers["Access-Control-Allow-Headers"] = "*"
+    # CORS 헤더 추가 (허용된 origin만)
+    origin = request.headers.get("origin", "")
+    if origin in ALLOWED_ORIGINS:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, Accept"
     return response
 
-# CORS 설정
+# CORS 미들웨어 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 모든 origin 허용
-    allow_credentials=False,  # credentials와 wildcard origin은 함께 사용 불가
-    allow_methods=["*"],  # 모든 HTTP 메서드 허용
-    allow_headers=["*"],  # 모든 헤더 허용
-    expose_headers=["*"],  # 모든 헤더 노출
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept"],
+    expose_headers=["Content-Length"],
 )
+
+# 인증서 라우터 등록
+app.include_router(certificate_router)
 
 
 # ============== API 엔드포인트 ==============
@@ -102,6 +134,7 @@ async def root():
 
 
 @app.post("/api/process", response_model=ProcessResult)
+@limiter.limit("10/minute")  # 분당 10회 제한
 async def process_image(
     request: Request,
     file: UploadFile = File(...),
@@ -114,7 +147,7 @@ async def process_image(
 ):
     """
     이미지 처리 API
-    
+
     - process_type: "poster" | "serial" | "defect"
     - file: 처리할 메인 이미지 파일
     - additional_instructions: 추가 지시사항 (선택)
@@ -301,6 +334,7 @@ async def process_image(
 
 
 @app.post("/api/poster")
+@limiter.limit("10/minute")  # 분당 10회 제한
 async def create_poster_thumbnail(
     request: Request,
     file: UploadFile = File(...),
@@ -416,6 +450,7 @@ async def create_poster_thumbnail(
 
 
 @app.post("/api/serial")
+@limiter.limit("10/minute")  # 분당 10회 제한
 async def enhance_serial_area(
     request: Request,
     file: UploadFile = File(...),
@@ -426,9 +461,9 @@ async def enhance_serial_area(
 ):
     """
     민감 정보 자동 감지 및 제거 (전용 엔드포인트)
-    
+
     시리얼 번호, 모델명, 인증 마크 등 민감 정보를 자동으로 감지하여 제거합니다.
-    
+
     - x, y, width, height: 선택적 영역 지정 (지정하지 않으면 전체 이미지에서 자동 감지)
     """
     return await process_image(
@@ -443,6 +478,7 @@ async def enhance_serial_area(
 
 
 @app.post("/api/defect")
+@limiter.limit("10/minute")  # 분당 10회 제한
 async def highlight_defect(
     request: Request,
     file: UploadFile = File(...),
@@ -454,10 +490,10 @@ async def highlight_defect(
 ):
     """
     하자 자동 감지 및 강조 (전용 엔드포인트)
-    
+
     이미지에서 하자를 자동으로 감지하여 빨간색 원으로 표시합니다.
     하자가 없으면 원본 이미지를 그대로 반환합니다.
-    
+
     - x, y, width, height: 선택적 영역 지정 (지정하지 않으면 전체 이미지에서 자동 감지)
     - defect_description: 하자 설명 (선택)
     """
@@ -485,71 +521,3 @@ async def get_prompts():
         "serial": SERIAL_ENHANCEMENT_PROMPT,
         "defect": DEFECT_HIGHLIGHT_PROMPT
     }
-
-
-# ==================== 인증 관련 엔드포인트 ====================
-
-from fastapi import Depends
-from sqlalchemy.orm import Session
-from app.auth import oauth, get_db, create_access_token, get_current_user, get_or_create_user
-from app.models import User, Base, engine, TokenResponse, UserResponse
-
-
-# 데이터베이스 테이블 생성
-Base.metadata.create_all(bind=engine)
-
-
-@app.get("/auth/google/login")
-async def google_login(request: Request):
-    """구글 로그인 시작"""
-    redirect_uri = request.url_for('google_callback')
-    return await oauth.google.authorize_redirect(request, redirect_uri)
-
-
-@app.get("/auth/google/callback")
-async def google_callback(request: Request, db: Session = Depends(get_db)):
-    """구글 OAuth 콜백"""
-    try:
-        # OAuth 토큰 교환
-        token = await oauth.google.authorize_access_token(request)
-        user_info = token.get('userinfo')
-
-        if not user_info:
-            raise HTTPException(status_code=400, detail="Failed to get user info from Google")
-
-        # 사용자 조회 또는 생성
-        user = get_or_create_user(
-            db=db,
-            email=user_info['email'],
-            name=user_info.get('name', ''),
-            picture=user_info.get('picture', ''),
-            provider='google',
-            provider_id=user_info['sub']
-        )
-
-        # JWT 토큰 생성
-        access_token = create_access_token(data={"sub": user.id})
-
-        # 모바일 앱으로 리다이렉트 (Deep Link)
-        # 실제로는 모바일 앱의 Custom URL Scheme 사용
-        return {
-            "access_token": access_token,
-            "token_type": "bearer",
-            "user": UserResponse.from_orm(user)
-        }
-
-    except Exception as e:
-        logger.error(f"Google OAuth error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Authentication failed: {str(e)}")
-
-
-@app.get("/auth/me", response_model=UserResponse)
-async def get_me(current_user: User = Depends(get_current_user)):
-    """현재 로그인한 사용자 정보 조회"""
-    return current_user
-
-
-@app.post("/auth/logout")
-async def logout(current_user: User = Depends(get_current_user)):
-    """로그아웃 (클라이언트에서 토큰 삭제)"""
-    return {"message": "Successfully logged out"}

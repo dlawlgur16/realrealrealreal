@@ -13,7 +13,8 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { createPoster } from '../services/api';
-import { saveBase64Image } from '../utils/storage';
+import { saveImageWithCloud } from '../utils/storage';
+import CertificateButton from '../components/CertificateButton';
 
 // OceanSeal 색상 팔레트
 const COLORS = {
@@ -170,7 +171,7 @@ export default function PosterScreen({ navigation }) {
     }
 
     try {
-      await saveBase64Image(processedImage, `poster_${Date.now()}.jpg`);
+      await saveImageWithCloud(processedImage, 'poster', `poster_${Date.now()}.jpg`);
       Alert.alert('저장 완료', '이미지가 갤러리에 저장되었습니다.');
     } catch (error) {
       console.error('Save error:', error);
@@ -322,13 +323,18 @@ export default function PosterScreen({ navigation }) {
                     <TouchableOpacity style={styles.saveButton} onPress={saveImage}>
                       <Text style={styles.saveButtonText}>💾 저장하기</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.retryButton}
-                      onPress={() => setProcessedImage(null)}
-                    >
-                      <Text style={styles.retryButtonText}>다시 생성</Text>
-                    </TouchableOpacity>
+                    <CertificateButton
+                      imageBase64={processedImage}
+                      processType="poster"
+                      style={styles.certButton}
+                    />
                   </View>
+                  <TouchableOpacity
+                    style={styles.retryButton}
+                    onPress={() => setProcessedImage(null)}
+                  >
+                    <Text style={styles.retryButtonText}>다시 생성</Text>
+                  </TouchableOpacity>
                 </View>
               )}
             </>
@@ -638,14 +644,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
   },
-  retryButton: {
+  certButton: {
     flex: 1,
+  },
+  retryButton: {
     backgroundColor: COLORS.card,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.border,
+    marginTop: 12,
   },
   retryButtonText: {
     fontSize: 15,

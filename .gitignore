@@ -35,8 +35,8 @@ dist/
 build/
 *.egg-info/
 
-
-
-
+# Firebase Service Account (민감 정보)
+*-firebase-adminsdk-*.json
+firebase-service-account.json
 
 
