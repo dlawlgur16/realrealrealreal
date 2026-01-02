@@ -1,228 +1,148 @@
-# 🥕 당근 부스터 (Karrot Booster)
+# OceanSeal (당근 부스터)
 
-**중고거래 프리미엄 포토 서비스** - AI 기반 이미지 변환으로 중고물품의 가치를 극대화하세요.
+**중고거래 프리미엄 포토 서비스** - AI 이미지 처리 + 블록체인 인증서
 
-## 📋 개요
+## 개요
 
-당근 부스터는 당근마켓, 중고나라 등 C2C 플랫폼 판매자를 위한 AI 이미지 처리 서비스입니다.
-**Gemini 3 Pro Image** 모델을 활용하여 세 가지 핵심 기능을 제공합니다.
+OceanSeal은 중고거래 판매자를 위한 AI 이미지 처리 서비스입니다.
+Gemini AI로 이미지를 처리하고, Polygon 블록체인에 디지털 인증서를 발급합니다.
 
-## ✨ 핵심 기능
+## 핵심 기능
 
-### 1. 🌟 포스터형 썸네일 (Aesthetic Hook)
+### 1. 포스터형 썸네일 (Pro Poster)
 - 평범한 중고물품 사진을 스튜디오급 썸네일로 변환
-- 깨끗한 배경 + 전문적인 조명
-- 제품의 원래 질감/상태는 유지 (빈티지 가치 보존)
+- 6가지 스타일: Dramatic, Tone-on-Tone, Modern, Artistic, Hero, Museum
 
-### 2. 🛡️ 인증 영역 선명화 (Trust Proof)
-- 시리얼 넘버, 모델명 등 인증 정보 강조
-- 특정 영역만 선택하여 가독성 향상
-- 나머지 이미지는 원본 그대로 유지
+### 2. 개인정보 블러 (Privacy Blur)
+- 시리얼 넘버, 모델명 등 민감 정보 자동 감지 및 제거
+- 특정 영역 선택 가능
 
-### 3. ⚠️ 하자 부분 강조 (The Honesty)
-- 정직한 상태 표시로 구매자 신뢰 확보
-- 하자 부분을 미적으로 강조
-- "정직한 판매자" 이미지 구축
+### 3. 하자 표시 (Defect Scan)
+- 제품 하자 자동 감지
+- 빨간색 원으로 하자 위치 표시
+- 정직한 거래 지원
 
-## 🛠️ 기술 스택
+### 4. 디지털 인증서 (LVMH Aura 스타일)
+- 처리된 이미지에 블록체인 인증서 발급
+- Polygon 네트워크에 해시 기록
+- QR코드로 누구나 검증 가능
 
-### Backend
-- **FastAPI** - Python 고성능 웹 프레임워크
-- **Gemini 2.5 Flash Image** - Google AI 이미지 생성/편집 모델
-- **google-genai** - Google Gemini API 공식 SDK
-- **Pillow (PIL)** - 이미지 처리 및 최적화
-- **python-dotenv** - 환경변수 관리
+## 기술 스택
 
-### Frontend
-- **Vanilla HTML/CSS/JS** - 단독 실행 가능
-- **React (선택)** - 컴포넌트 기반 버전
-- **Pretendard** - 한글 최적화 폰트
+| 구분 | 기술 |
+|------|------|
+| 모바일 앱 | React Native + Expo |
+| 백엔드 | Python FastAPI |
+| AI | Google Gemini API |
+| 인증 | Firebase Auth (Google/Kakao) |
+| DB | Supabase PostgreSQL |
+| 이미지 저장 | Supabase Storage |
+| 블록체인 | Polygon (Amoy Testnet) |
 
-## 📁 프로젝트 구조
+## 프로젝트 구조
 
 ```
 realrealrealreal/
-├── app/                    # 백엔드 코드
-│   ├── __init__.py
-│   ├── main.py            # FastAPI 앱 및 엔드포인트
-│   ├── config.py          # 설정 및 Gemini 클라이언트 초기화
-│   ├── models.py          # Pydantic 데이터 모델
-│   ├── prompts.py         # 프롬프트 템플릿
-│   ├── utils.py           # 유틸리티 함수 (이미지 처리 등)
-│   └── gemini_client.py   # Gemini API 클라이언트
-├── frontend/              # 프론트엔드 파일
-│   ├── index.html         # 단독 실행 가능한 웹 앱
-│   └── App.jsx            # React 컴포넌트 버전
-├── run.py                 # 서버 실행 스크립트
-├── requirements.txt       # Python 의존성
-└── README.md
+├── app/                          # 백엔드 (FastAPI)
+│   ├── main.py                   # API 엔드포인트
+│   ├── config.py                 # Gemini 설정
+│   ├── models.py                 # Pydantic 모델
+│   ├── prompts.py                # AI 프롬프트
+│   ├── gemini_client.py          # Gemini API
+│   ├── utils.py                  # 유틸리티
+│   └── certificate/              # 인증서 모듈
+│       ├── router.py             # 인증서 API
+│       ├── service.py            # 비즈니스 로직
+│       ├── blockchain.py         # Polygon 연동
+│       └── models.py             # 인증서 모델
+│
+├── mobile/                       # 프론트엔드 (React Native)
+│   ├── App.js                    # 앱 진입점
+│   └── src/
+│       ├── screens/              # 화면들
+│       ├── services/             # API 서비스
+│       ├── components/           # 컴포넌트
+│       └── config/               # 설정
+│
+├── contracts/                    # 스마트 컨트랙트
+│   └── OceanSealCertificate.sol
+│
+└── scripts/                      # 유틸리티 스크립트
+    ├── setup_blockchain.py       # 지갑 생성
+    └── deploy_final.py           # 컨트랙트 배포
 ```
 
-## 🚀 시작하기
+## 시작하기
 
-### 1. 백엔드 설정
+### 1. 백엔드 실행
 
 ```bash
-# 가상환경 생성 (선택)
+# 가상환경 생성
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # 의존성 설치
 pip install -r requirements.txt
 
-# 환경변수 설정
-# Windows (cmd):
-set GEMINI_API_KEY=your-api-key-here
-
-# Windows (PowerShell):
-$env:GEMINI_API_KEY='your-api-key-here'
-
-# Linux/Mac:
-export GEMINI_API_KEY='your-api-key-here'
-
-# 또는 .env 파일 생성 (python-dotenv 자동 로드)
-# .env 파일에 GEMINI_API_KEY=your-api-key-here 작성
+# 환경변수 설정 (.env 파일)
+GEMINI_API_KEY=your-gemini-key
+SUPABASE_URL=https://xxx.supabase.co
+SUPABASE_SERVICE_KEY=your-service-key
+POLYGON_RPC_URL=https://rpc-amoy.polygon.technology
+POLYGON_PRIVATE_KEY=your-private-key
+CERTIFICATE_CONTRACT_ADDRESS=0x...
 
 # 서버 실행
-python run.py
-# 또는
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### 2. 프론트엔드 실행
+### 2. 모바일 앱 실행
 
 ```bash
-# 방법 1: 단순 파일 열기
-# frontend/index.html을 브라우저에서 직접 열기
-
-# 방법 2: 로컬 서버로 실행
-cd frontend
-python -m http.server 3000
-# http://localhost:3000 접속
-
-# 방법 3: 루트에서 실행
-python -m http.server 3000 --directory frontend
-```
-
-### 3. API 키 발급
-
-1. [Google AI Studio](https://aistudio.google.com/) 접속
-2. API Key 생성
-3. `GEMINI_API_KEY` 환경변수로 설정
-
-## 📡 API 엔드포인트
-
-### 기본 처리 API
-```
-POST /api/process
-```
-
-| 파라미터 | 타입 | 설명 |
-|---------|------|------|
-| file | File | 이미지 파일 (필수) |
-| process_type | string | "poster" \| "serial" \| "defect" |
-| reference_files | File[] | 레퍼런스 이미지 파일들 (선택, 여러 장 가능) |
-| additional_instructions | string | 추가 지시사항 (선택) |
-| mask_x, mask_y | int | 영역 시작 좌표 (serial, defect용) |
-| mask_width, mask_height | int | 영역 크기 (serial, defect용) |
-
-**레퍼런스 이미지 기능:**
-- 첫 번째 이미지가 메인 제품 이미지
-- 나머지 이미지는 스타일 가이드로 사용
-- 레퍼런스 이미지의 스타일, 조명, 배경을 메인 이미지에 적용
-
-### 전용 엔드포인트
-```
-POST /api/poster   # 포스터 썸네일 전용
-POST /api/serial   # 시리얼 선명화 전용
-POST /api/defect   # 하자 강조 전용
-```
-
-### 응답 형식
-```json
-{
-  "success": true,
-  "image_base64": "...",
-  "message": "이미지 처리가 완료되었습니다.",
-  "process_type": "poster",
-  "processing_time_ms": 12500
-}
-```
-
-## 💰 비즈니스 모델 (제안)
-
-| 상품 | 내용 | 가격 |
-|------|------|------|
-| Trial | 썸네일 1장 | 990원 |
-| Standard | 썸네일 + 인증샷 3장 세트 | 2,900원 |
-| Premium | Standard + 판매 컨설팅 | 4,900원 |
-| 월 구독 | 월 10건 처리권 | 19,900원 |
-
-## ⚠️ API 사용량 제한
-
-Gemini 2.5 Flash Image 모델 (무료 티어 기준):
-- **RPM**: 20 (분당 요청 수)
-- **TPM**: 100K (분당 토큰 수)
-- **RPD**: 250 (일일 요청 수)
-
-> 서비스 확장 시 유료 플랜으로 업그레이드 필요
-
-## 🔧 주요 기능
-
-### 레퍼런스 이미지 지원
-- 여러 레퍼런스 이미지를 업로드하여 스타일 일관성 확보
-- 첫 번째 이미지가 메인 제품 이미지
-- 나머지 이미지는 스타일 가이드로 활용
-- 문서 기반 모범 사례 적용
-
-### 이미지 최적화
-- 자동 이미지 리사이즈 (최대 1500px)
-- JPEG/PNG 자동 최적화
-- 처리 속도 향상 및 API 비용 절감
-
-## 🎯 판매 팁
-
-1. **포스터 썸네일**을 첫 번째 사진으로 사용
-2. 나머지 사진은 **실제 제품 사진**으로 신뢰도 확보
-3. 하자가 있다면 **정직하게 표시**하여 분쟁 방지
-
-## 🔧 문제 해결
-
-### macOS에서 Expo 의존성 오류가 발생하는 경우
-
-macOS에서 `npx expo` 실행 시 의존성 패치 오류가 발생할 수 있습니다.
-
-**해결 방법:**
-
-```bash
-# 방법 1: 자동 수정 스크립트 실행
-./fix-expo-mac.sh
-
-# 방법 2: 수동 수정
 cd mobile
-rm -rf node_modules package-lock.json
-npm cache clean --force
+
+# 의존성 설치
 npm install
-npx expo install --fix
+
+# Expo 개발 서버 실행
+npx expo start
+
+# EAS 빌드 (Google 로그인 테스트용)
+eas build --profile development --platform ios
 ```
 
-**수정 후 실행:**
-```bash
-./start-with-ngrok.sh
-```
+## API 엔드포인트
 
-### Windows에서는 잘 되는데 macOS에서만 문제가 있는 경우
+### 이미지 처리
 
-1. Node.js 버전 확인: `node -v` (v18 이상 권장)
-2. npm 버전 확인: `npm -v` (v9 이상 권장)
-3. Xcode Command Line Tools 설치: `xcode-select --install`
-4. Homebrew로 ngrok 설치: `brew install ngrok/ngrok/ngrok`
+| 엔드포인트 | 설명 |
+|-----------|------|
+| `POST /api/poster` | 포스터 썸네일 생성 |
+| `POST /api/serial` | 개인정보 블러 |
+| `POST /api/defect` | 하자 감지 |
 
-## 📝 라이선스
+### 인증서
+
+| 엔드포인트 | 설명 |
+|-----------|------|
+| `POST /api/certificate/issue` | 인증서 발급 (인증 필요) |
+| `GET /api/certificate/{id}` | 인증서 조회 |
+| `GET /api/certificate/verify/{id}` | 인증서 검증 (공개) |
+| `GET /api/certificate/user/{uid}` | 내 인증서 목록 (인증 필요) |
+
+## 보안
+
+- CORS: 허용된 도메인만 접근 가능
+- Rate Limiting: 분당 10회 (인증서는 분당 5회)
+- Firebase Token 인증: 민감한 API 보호
+- SQL Injection 방지: 입력값 검증
+
+## 배포
+
+- 백엔드: AWS EC2 + Docker
+- 도메인: https://api.ocean-seal.shop
+- 블록체인: Polygon Amoy Testnet
+
+## 라이선스
 
 MIT License
-
-## 🙏 크레딧
-
-- Gemini API by Google
-- Pretendard Font by Kil Hyung-jin
